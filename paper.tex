@@ -139,7 +139,7 @@ Results demonstrate that our method is able to discover optimizations that pass 
 \label{submission}
 
 \gn{Overall, the background in the paper feels under-described for an ML audience. Try to think back to before you started this project, think about the knowledge you had of compilers etc. Would you understand everything you wrote here? If not, try to add (very brief) descriptions of background knowledge necessary to follow the description.}
-\gn{Now, attacking this from the opposite direction, the details seem a bit under-described for someone who wants to re-implement your work. Try to look at previous papers on programs at ML conferences, and look at their level of description. You don't need to match this, but they would be good guides. Also note how they have lots of figures. \url{https://miltos.allamanis.com/publicationfiles/allamanis2018learning/allamanis2018learning.pdf} \url{https://arxiv.org/pdf/1803.09473.pdf} \url{https://arxiv.org/pdf/2101.12087.pdf} }
+\gn{Now, attacking this from the opposite direction, the details seem a bit under-described for someone who wants to re-implement your work. Try to look at previous papers on programs at ML conferences, and look at their level of description. You don't need to match this, but they would be good guides. Also note how they have lots of figures. \url{https://miltos.allamanis.com/publicationfiles/allamanis2018learning/allamanis2018learning.pdf} \url{https://arxiv.org/pdf/1803.09473.pdf} \url{https://arxiv.org/pdf/2101.12087.pdf} } \alex{in progress ... some extra detail in section 6.1 regarding implementation-specific details. }
 
 Software touches virtually every industry and consumer in the modern information economy.
 At the same time, the resources that we pour into running software are immense -- for example, recent estimates suggest that \emph{data centers alone} represent 1\% of global energy usage \citep{masanet2020recalibrating}.
@@ -188,20 +188,15 @@ Another work that addressed automatic program optimization is \cite{bunel2016lea
 
 The authors in \cite{chen2018learning} apply machine learning to help guide search for optimal schedules of semantics preserving program transformations. The work is quite similar to \cite{chen2019learning} in that it seeks to find an optimal sequence of expert-written transformations to apply; however, it applies stochastic search similar to \cite{schkufza2013stochastic}, except using a learned cost function to reduce the number of programs executed on hardware. 
 
-\section{Problem Formulation}
+\section{Problem Overview}
+
+\subsection{Problem Formation}
 
 % \gn{use ``citet'' for citations that are part of a sentence. Also in other places (like the future work)}
 The task of program optimization considers transducing an (unoptimized) program $\p$ into an optimized one $\popt$ such that $\popt$ runs more efficiently or has smaller memory footprints.
 Examples of program optimizations can range from removing a redundant operation to complex techniques for allocating the large number of program variables to a limited number of cpu registers.\pcyin{ALEX: can you provide a very simple and brief example of program optimization here?}. \alex{Done.}
 In this paper we focus on program optimization at assembly level, where $\p$ and $\popt$ are programs written in X86 assembly language.
-The standard toolkit for optimizing X86 assembly code is \texttt{GCC}, an optimizing compiler equipped with predefined set of optimization heuristics.
-
-%In describing the task of neural program optimization,  we build on notation from the program synthesis formulation in \citet{bunel2018leveraging}. The task of program optimization through neural sequence models 
-%\gn{Do we need ``through neural sequence models''? Be best to skip this and make it more broad in the problem formulation.} 
-%is transducing an (unoptimized) program $\text{F}_u$ into an optimized one $\text{F}_o$, where $\text{F}_o$ is better than $\text{F}_u$ under some cost function $\mathbfcal{C}$, such as runtime, memory footprint or energy consumption.
-%and equivalent under a distance metric $\mathbfcal{D}$. 
-%Our goal is to learn a neural model  $f_{\theta}: \text{F}_u \mapsto \text{F}_o$. 
-%\pcyin{Defer introducing $\mathcal{D}$ to the later paragraph where this notation is used.}
+A standard optimizing compiler, which is capable of generating X86 assembly code is \texttt{GCC}, which is equipped with predefined set of optimization heuristics.
 
 Because each program is a function that maps inputs to outputs, we will use $I$ to represent the hardware state prior to executing the program (i.e., input) and $O$ to represent the hardware state after executing the program (i.e., output).
 Specifically, our goal is to learn a \gn{again, is ``neural'' necessary?} \alex{done} model $f_{\theta}: \text{F}_u \mapsto \text{F}_o$ such that a model-generated (optimized) program $\hat{F_o}$ attains lower cost under a cost function $\mathcal{C}(\cdot)$ evaluated on a suite of $K$ input-output test cases $\{ IO \}_{k=1}^K$:
@@ -223,12 +218,12 @@ Specifically, our goal is to learn a \gn{again, is ``neural'' necessary?} \alex{
     \end{split}
 \end{equation}
 
-where $\mathcal{D}(\cdot) \in \{ 0, 1 \}$ is a distance metric that measures if the model optimized program $\hat{F}_o$ is functionally equivalent to the original one $\p$. 
+where $\mathcal{D}(\cdot) \in \{ 0, 1 \}$ is an indicator function that measures if the model optimized program $\hat{F}_o$ is functionally equivalent to the original one $\p$. 
 As we explain in Section xxx, the cost function $C$ considers metrics like runtime, and could be computed by directly executing the optimized program on the test cases $\{ IO \}_{k=1}^K$.
-For conciseness, we will abbreviate $\mathbfcal{C} (\hat{\textrm{F}}_{o}; \{IO_k\}_{k=1...K})$  as $\mathbfcal{C} (\hat{\textrm{F}}_{o})$. 
+For conciseness, we will abbreviate $\mathbfcal{C} (\hat{\textrm{F}}_{o}; \{IO_k\}_{k=1}^K)$ as $\mathbfcal{C} (\hat{\textrm{F}}_{o})$. 
 
 In situations in which we desire to learn optimizations through demonstrations, we could collect ground-truth optimized programs $\popt$ from an optimizing compiler (e.g., \texttt{GCC}).
-Our training set is therefore initialized with $N$ tuples of an I/O test suite $\{IO_k^i\}_{k=1^K}$, an unoptimized program $\p$, and the compiler-optimized one $\popt$:
+Our training set is therefore initialized with $N$ tuples of an I/O test suite $\{IO_k\}_{k=1}^K$, an unoptimized program $\p$, and the compiler-optimized one $\popt$:
 %For example, as we elaborate in Section xxx, the C program compiler GCC could be configured to perform different levels of optimization.
 %In situations in which we desire to learn optimizations through demonstrations, we will denote a ground-truth optimized program, for example, from an optimizing compiler, as $\textrm{F}_o$. In our later experiments, prior to training, we initialize a dataset $D_o$ of $N$ tuples of an I/O test suite, an unoptimized function, and compiler-optimized function as demonstration: 
 \begin{equation} 
@@ -257,12 +252,17 @@ Before this, we first introduce our benchmark dataset of optimizing real-world p
 \pcyin{TODO: config \texttt{cleverref}}
 %In \S\ref{sec:benchmark} we describe one concrete instantiation of this problem formulation on real-world programs, and in \S\ref{sec:learning} we describe our methodology for modeling and learning $f_\theta$ within this setup.
 
+\subsection{Problem Objectives}
+
+\alex{2:00 PM: I would like some feedback on this new section (in progress rn..). 1. are the brackets okay ? if not feel free to change. Wording this section well seems important.}
+
+In attempting to learn program optimizations with deep learning, we are interested in the question [1] are neural networks generally capable learning semantics-preserving program optimizations? An additional inquiry is are [2] neural networks additionally capable of discovering new optimizations given a specification or goal? We are importantly interested in learning [3] optimizations on real world programs and understanding what techniques can facilitate this in practice: for example, how should we approach measuring program performance and equivalence ? An auxiliary area of interest to us is [4] are similar challenges faces in the task of program optimization to related areas of machine learning research, such as program synthesis, semantic parsing, and reinforcement learning ?  \alex{some more questions, What data should we use / collect for this. What are the challenges in doing so ? Whare are the}
 
 
 \section{Real-World Optimization Benchmark}
 \label{sec:benchmark}
 
-\alex{1:12 PM Thursday: will circle back to this section}
+\alex{1:12 PM Thursday: will circle back to this section. Focusing on more ML-related sections}
 
 % \subsection{Metrics and Program Representation}
 
@@ -283,6 +283,8 @@ Before this, we first introduce our benchmark dataset of optimizing real-world p
 We created a real-world data dataset of functions in x86-64 assembly from C programs on \GH \footnote{We utilized the following \GH{}  Cloner and Compiler for bulk-compilation \url{https://github.com/huzecong/ghcc}}. Our programs were compiled using GCC version 5.4.0 and subsequently disassembled using \textsc{GNU} Binutils’ objdump into x86-64 assembly, and split into individual functions. We performed the process twice on the same set of source code, so that we could create a parallel corpus of functions aligned between the GCC -O0 and -Og output with 1.77 million examples. 
 
 In order to create a dataset of functions whose re-writes could be executed and evaluated, we further mined a subset of 15,175 functions for training, 775 for validation, and 942 for testing. \ed{The jump from 1.77 million examples to ~17K deserves more of an explanation.} \gn{Right, and it's probably because only about 17k finished processing right? It'd be nice to change 1.77 million to the number of ones we actually \emph{tried} to process, and explain why some were filtered out.} We were able to create testcases through random generation using the \textsc{STOKE} toolkit.\footnote{\url{https://github.com/StanfordPL/stoke}}   In order to create conservative benchmarks \gn{Needs more explanation.}, we eliminated any functions in our dataset that caused segmentation faults either when testcases were executed on the original unoptimized or optimized function. \ed{Does this mean that if a function dereferences a pointer argument it will likely be excluded?} We further removed any functions where the compiler optimized program was not logically equivalent to the unoptimized program using an SMT solver and equivalent under all testcases. \ed{I think this also needs more explanation.  It makes it sound like the compiler is to blame, but that's not really the case.} To further avoid learning spurious optimizations, we required that our programs were not equivalent under testcases to three pathological spurious program examples. 
+% We allowed the model generate upwards of 256 testcases per-program, unless the generation budget time of 180 seconds per program was exhausted.
+
 %\pyin{Could you explain the last sentence more?}
 \ed{I also found the previous sentence confusing.}
 
@@ -299,27 +301,31 @@ Although the subset of functions available to be executed is relatively small co
 %We perform a two-step process for learning program optimization, which consists first of supervised maximum-likelihood training to learn the compiler-optimized outputs, then fine tuning is performed to directly minimize the cost of model predictions.
 
 We perform a two-step process for learning program optimization.
-In this section, we first describe our underlying model, then describe the first step of pre-training the model using imitation learning, and finally describe the second step of using a hill-climbing algorithm that directly minimizes the expected cost of model-optimized programs \gn{Does it actually minimize the expected cost (in a mathematical sense)? I don't think so.}.
+In this section, we first describe our underlying model, then describe the first step of pre-training the model using imitation learning, and finally describe the second step of using a hill-climbing algorithm that directly minimizes the cost of model-optimized programs \gn{Does it actually minimize the expected cost (in a mathematical sense)? I don't think so.}\pcyin{Done: deleted ``expected''}.
 %\pcyin{We need to change the term ``fine-tuning''. Can we say ``RL'' here? Perhaps not because it's not exactly RL?}
 %using the outputs of the neural model itself. 
 %For the first phase, the dataset of 1.77 million functions mined from open source projects was used. In the second phase we fine-tune the pre-trained model using an iterative-hill climbing algorithm. 
 
 \subsection{Underlying Model}
 
-\gn{I think it'd be best to describe your model first, as that is shared between the training algorithms. You should back-reference the equations in the problem formulation $f_\theta$. How do you represent programs. Here, you don't describe the inputs and outputs ()}
+\gn{I think it'd be best to describe your model first, as that is shared between the training algorithms. You should back-reference the equations in the problem formulation $f_\theta$. How do you represent programs. Here, you don't describe the inputs and outputs ()} \alex{In section 6.1 implementation specific details are included and I've tried to add relevant notation }
 
 Our model $f_{\theta}$ is based on a standard Transformer-based encoder \citep{vaswani2017attention}, but with a LSTM-based decoder \citep{hochreiter1997long,chen-etal-2018-best} instead.
-This was mainly done to speed-up prediction within the iterative training loop described in \S\ref{sec:hillclimbing}, as transformers suffer from quadratic decoding time in sequence length \citep{chen-etal-2018-best}.
+This was mainly done to speed-up prediction within the iterative training loop described in \S\ref{sec:hillclimbing}, as transformers suffer from quadratic decoding time in sequence length \citep{chen-etal-2018-best}. We defer more implementation-specific details for our experiments to Section \ref{sec:experiments}. 
+
 \gn{More detail. What are your inputs and outputs. Do you do subword tokenization? Can you give an example of what the inputs and outputs look like?} \alex{Done in section 6.1 setup: model architecture, data processing (canonicalization and bpe) as well as configuration of performance + correcteness}
 
-\gn{You have a pretty extensive description below on why you \emph{don't} do what you don't do, but only one sentence explaining what you actually do :)} \alex{I think maybe now there is some more implementation-specific detail in 6.1, do we think that is good now ? }
-While it is often advantageous to leverage a grammar for code generation tasks \citep{parisotto2016neuro,yin-neubig-2017-syntactic}, we chose not to do so in this setting. A primary reason was for simplicity. An additional reason was access to large amounts of data for supervised learning, which may implicitly learn syntax. Previous work in machine-learning-based program synthesis has demonstrated that while a grammar may help greatly in low-data program synthesis regimes, it may do little to improve both MLE and RL-based experiments when extensive data is available for pre-training \cite{bunel2018leveraging}.
+\gn{You have a pretty extensive description below on why you \emph{don't} do what you don't do, but only one sentence explaining what you actually do :)} \alex{We now have implementation-specific detail in 6.1, an option is to merge that here.. }
+While it is often advantageous to leverage a grammar for code generation tasks \citep{parisotto2016neuro,yin-neubig-2017-syntactic}, we chose not to do so in this setting. A primary reason was for simplicity. An additional reason was access to large amounts of data for supervised learning, which may implicitly learn syntax. Previous work in machine-learning-based program synthesis has demonstrated that while a grammar may help greatly in low-data program synthesis regimes, it may do little to improve both MLE and RL-based experiments when extensive data is available for pre-training. 
+\cite{bunel2018leveraging}.
 
 \subsection{Pre-training}
-In the pre-training step, we train a neural model learn common optimizations performed by existing compilers (e.g., GCC) using maximum likelihood estimation. 
-The training set consists of compiler-optimized outputs for the xxx \pcyin{how many?} functions mined from \textsc{GitHub}.
-Additional details regarding training parameters are located in appendix - \alex{need to insert an appendix on this}. 
-\gn{I think it'd be better to put some of the detail here. This is one of the important parts of our algorithm.}
+
+In the pre-training step, we train a neural model learn common optimizations performed by an optimizing compiler (e.g., \texttt{GCC}) using maximum likelihood estimation. \alex{I think we could remove this section, and mention we do pre-training before hill-climbing in section 6}
+
+% The training set consists of compiler-optimized outputs for the xxx \pcyin{how many?} functions mined from \textsc{GitHub}.
+% Additional details regarding training parameters are located in appendix - \alex{need to insert an appendix on this}. 
+% \gn{I think it'd be better to put some of the detail here. This is one of the important parts of our algorithm.}
 
 
 \subsection{Iterative Hill-Climbing}
@@ -388,12 +394,12 @@ Algorithm \ref{alg:hill_climbing} bears some resemblance to self-imitation learn
 
 % \alex{I think this would be nice to include, even if this underperforms any other method. It may be challenging for the reader to follow how you derive this w/out visiting the appendix}
 
-\paragraph{Actor-Learner Architecture}
+\paragraph{Actor-Learner Algorithm}
 \gn{Is this an architecture or algorithm?}
 \gn{I changed this to a paragraph, as it's part of the iterative hill-climbing approach.}
 
 \pcyin{Maybe briefly explain why we use multiprocessing: because evaluating $\mathcal{D}(\cdot)$ is slow. Would be better to given a rough runtime number.}
-Importantly, to perform our experiments at scale, we utilize an actor-learner architecture  \citep{liang2018memory, espeholt2018impala}. Specifically, before the training process begins, multiple actor threads are created which inherit the parameters of the parent learner and the dataset. For every iteration, each of the actor threads independently samples $B_{\textrm{ex}}$ from the distribution of the inherited model. 
+Importantly, to perform our experiments at scale, we utilize an actor-learner set up  \citep{liang2018memory, espeholt2018impala}. Specifically, before the training process begins, multiple actor threads are created which inherit the parameters of the parent learner and the dataset. For every iteration, each of the actor threads independently samples $B_{\textrm{ex}}$ from the distribution of the inherited model. 
 
 After sampling a batch re-writes, an attempt is made to assemble the samples and execute them with their corresponding suite of testcases to calculate $\mathbfcal{C}$ and $\mathbfcal{D}$. At the local level, the actor then sends the samples with their related cost and correctness information to the learner module for learning. Then, the actor attempts to synchronize its parameters by inheriting a new copy, if available, from the learner module.
 
@@ -402,20 +408,29 @@ Utilizing the actor-learner architecture was pivotal in being able to scale the 
 % Utilizing an actor-learner architecture allowed us to speed up training by over an order of magnitude. 
 
 \section{Experiments and Results}
+\label{sec:experiments}
 
 \subsection{Setup}
 
 \paragraph{Model and Training} In our experiments, for our model $f_{\theta}$, we utilized a 3-layer transformer encoder with embedding dimension of 512 with 8 attention-heads and a 2-layer LSTM decoder with a hidden size of 1024 using the attention mechanism from \citet{bahdanau2014neural}. We utilize the Adam optimizer \cite{kingma2014adam} with the inverse square root schedule from \citet{vaswani2017attention}. We pre-trained the model for 33K steps and subsequently performed hill-climbing for an additional 5K steps. 
 
 
-\paragraph{Data Processing} Using data out  order to process the $F_u$ and $F_o$, we need to perform extra canonicalization in order to filter out noise. x86-64 often uses \textsc{goto} instructions to jump to different parts of a binary: this is one way that control flow is implemented. We canonicalize numerical locations with ordinal locations: this fully preserves function semantics while removing noise from the prediction task. We additionally pre-process the assembly with byte-pair encoding \citep{sennrich2015neural} \footnote{To build the tokenizer we utilized SentencePiece: \url{https://github.com/google/sentencepiece}}. \pcyin{This sentence could be moved to implementation details.} 
+\paragraph{Data Processing} In order to process our programs that we feed into the model for pre-training: $F_u$ and $F_o$, we need to perform extra canonicalization in order to filter out noise. x86-64 often uses \textsc{goto}-like instructions to jump to different parts of a binary: this is one way that control flow is implemented. We canonicalize file-offset-based location tags \alex{@Ed, or @Jeremey is that right.. the locations in x86 are often file offsets right ? + is it not unreaonable to say "jmp" in x86 is like a goto ?} with ordinal locations: this fully preserves function semantics while removing noise from the prediction task. We additionally pre-process the assembly with byte-pair encoding \citep{sennrich2015neural} \footnote{To build the tokenizer we utilized SentencePiece: \url{https://github.com/google/sentencepiece}}. 
 
 
 \paragraph{Measuring Program Performance and Correctness} In our experiments, we calculate the cost function $\mathcal{C}$ first by calculating the sum of all expected cpu clock-cycles for each opcode in the synthesized program. Then, we execute the entire test suite on the synthesized program and count the number of instructions actually executed.%
-\footnote{We chose to use these these methods of approximating runtime, as the actual measured runtime of the program re-writes may both be hardware-dependent and inconsistent between executions due to idiosyncrasies of the hardware used for experiments.}
-In order to calculate \mathbfcal{D}, we initially used the hardware states (i.e. output) after execution between the reference program fed in as input to the model: if the output for any one testcases differed by one bit or more in the relevant hardware states, the the programs were not equivalent. As we will discuss later on, we also experimented by using a SMT solver to additionally add more rigor to the calculation of \mathbfcal{D}.  
+\footnote{We chose to use these these methods of approximating runtime, as the actual measured runtime of the program re-writes may both be hardware-dependent and inconsistent between executions due to idiosyncrasies of the hardware used for experiments.} For each unoptimized program $F_u$, have a corresponding set of input examples ${\{IO_k\}}_{k=1...K}$ generated through random generation. 
 
-\gn{IMPORTANT: let's try to think of the main experimental findings that we want to show. One good way to organize these is to think of them in question format, with the most interesting questions first, and auxiliary questions afterwards. For example the ones I can immediately think of now are: ``RQ1: Can machine learning models learn to optimize real-world programs, particularly better than compiler heuristics? RQ2: What sorts of optimizations are learned? RQ3: What is the importance of a good test suite or verifier? RQ4: ???'' You could either explicitly lay them out in bullet points here, or just kinda order the explanation along these lines (maybe in different sections)}
+% We allowed the model generate upwards of 256 testcases per-program, unless the generation budget time of 180 seconds per program was exhausted. 
+
+In order to calculate correctness $\mathcal{D}$, we initially used the hardware states $O$ (i.e. output) after execution between the reference program fed in as input to the model: if the output for any one testcases differed by one bit or more in the relevant hardware states, the the programs were not equivalent. As we will discuss later on, we also experimented by using a SMT solver as a bounded verifier \alex{Because we have a model$f_{\theta}$ I think a "model checker" could be a confusing term. Using "verifier"} to additionally add more rigor to the calculation of $\mathcal{D}$. In theory, the verifier should be able to accurately check for correctness as long as the number of loop iterations stays below the configured maximum bound of $b$, and the process does not timeout by taking over $S$ seconds. For our experiments, we utilized a bound $b$ of 4, and a timeout $S$ of 180 seconds. 
+We utilized the verifier for x86-64 assembly code available in \textsc{STOKE} which makes use of the Z3 SMT solver \cite{churchill2017sound, de2008z3}. 
+
+% \gn{IMPORTANT: let's try to think of the main experimental findings that we want to show. One good way to organize these is to think of them in question format, with the most interesting questions first, and auxiliary questions afterwards. For example the ones I can immediately think of now are: ``RQ1: Can machine learning models learn to optimize real-world programs, particularly better than compiler heuristics? RQ2: What sorts of optimizations are learned? RQ3: What is the importance of a good test suite or verifier? RQ4: ???'' You could either explicitly lay them out in bullet points here, or just kinda order the explanation along these lines (maybe in different sections)} \alex{Great point; I think this could perhaps fit in section 3 as a pre-amble to "learning program optimizations" to frame what we're interested in accomplishing. In progress (1:51PM)}
+
+\paragraph{Evaluation}
+
+We report our performance on a randomly-sampled subset of the training set as well as the entire test set. Our intent in doing so is to evaluate the learned model in two task-settings: the first being an \textit{inductive} task where we are interested in the model generated and its ability to generalize to unseen examples in the test set. The second task is a \textit{transductive} task where we are not interested in the model per-se, rather, we are interested in the capacity of the model and the training procedure to transduce unoptimized programs to optimized programs. In both tasks we generate samples using a beam-size of 10, executing all on the test suite $\{IO\}_{k}^K$ to calculate both $\mathcal{C}$  and $\mathcal{D}$ and we optionally use the SMT-based verifier to also calculate $D$. \footnote{Another way to perform transductive evaluation is by reporting statistcs on the best outputs generated during training. We felt beam-search would provide a more interesting comparison.}. Then, of these ten samples, we report results on the best-performing correct sample (if one was available). 
 
 
 \subsection{Training Only with Testcases}
@@ -424,27 +439,26 @@ In order to calculate \mathbfcal{D}, we initially used the hardware states (i.e.
 
 % \subsection{Testcase-Only Training}
 
-We fine-tuned our model by performing the hill-climbing algorithm using equivalence of testcase output determine program equivalence. We evaluate the program's estimated runtime by adding the estimated number of cpu clock-cycles per-opcode in the program to the number of instructions actually executed by running testcases. 
+In trying to learn program optimizations, we first performing the hill-climbing algorithm where we used testcases only for calculating correctness $\mathcal{D}$. Our results are located in Table \ref{tab:random_generation_results}. 
 
-We report our performance on a randomly-sampled subset of the training set as well as the entire test set. Our intent in doing so is to evaluate the learned model in two task-settings: the first being an \textit{inductive} task where we are interested in the model generated and its ability to generalize to unseen examples in the test set. The second task is a \textit{transductive} task where we are not interested in the model per-se, rather, we are interested in the capacity of the model and the training procedure to transduce unoptimized programs to optimized programs. In both tasks we generate samples using a beam-size of 10, executing all on the I/O test suite\footnote{Another way to perform transductive evaluation is by reporting statistcs on the best outputs generated during training. We felt beam-search would provide a more interesting comparison.}. Then, of these ten samples, we report results on the best-performing correct sample (if one was available). Our results are located in Table \ref{tab:random_generation_results}. 
+We found that the fine-tuning with the iterative hill-climbing consistently improved results in terms of the proportion of programs optimized past the \texttt{GCC -Og} benchmark. An interesting result was that the hill-climbing algorithm performed slightly worse in the inductive task of outperforming the \texttt{GCC -O0} unoptimized baseline. 
 
-We found that the fine-tuning with the iterative hill-climbing consistently improved results in terms of the proportion of programs optimized past the GCC -Og benchmark on which it was provided demonstrations for training. An interesting result was that the hill-climbing algorithm performed worse on creating correct programs that outperformed the -O0 baseline in the inductive setting. 
-
-We then performed a manual evaluation of the outputs generated during training by randomly sampling \alex{XX} programs that outperformed the GCC -Og benchmark. We found that \alex{XX.XX\%, i.e many} of these programs in fact were spuriously optimal: they behaved equivalent for all testcases, but had different behavior for at least one input. We witnessed that the model would often remove conditional branches from programs that were unlikely to be triggered through random testing.
+We subsequently performed a manual evaluation of the outputs. We randomly sampled 29 of the programs that beat the \texttt{GCC -Og} benchmark in the hold-out set. Upon close analysis, we found 8 of these 29 programs (or 27.59\%) were semantics preserving and correct. We witnessed two large groups of errors: the first was that the model would often remove conditional branches from programs that were unlikely to be triggered through random testing. 
 %
 %We witnessed that the model often %removed entire branches from programs. 
 %\pcyin{Sorry I don't quite get the %following two sentences.}
-For example, if an assembly instruction is only executed when a 64-bit input register is set to a particular constant,  
-%In these cases, the programs would cause branching behavior by testing for equivalence between two different variables, or between a variable and a constant 
-(e.g. $\textbf{if} \;\; \mathbf{x\;==\;0:\; ...}$)
-%,. Notwithstanding other program behavior, sampling an exact constant to 
-the probability that a randomly generated testcase will trigger the branch is equal to $(2^{-64})$ and thus highly unlikely. 
-%, so it is highly likely that certain important constants were not sampled though the automated testcase generation process.
-\ed{Thus, randomly sampled testcases are insufficient for ...}
+Take an example in which we have a program in which we would like to trigger behavior if the variable $x$ is equal to the constant 0 (i.e. $\textbf{if} \;\; \mathbf{x\;==\;0:\; \textsc{do}...}$). If $x$ is represented by a 64-bit integer in a cpu register, and if we use a uniform random distribution to generate values for x in testcases,  likelihood of sampling the exact constant 0 is $(2^{-64})$, and thus very unlikely. As a result, randomly-generated testcases can be highly insufficient for measuring program correctness. 
 
-Given that randomly generated testcases were insufficient to reveal many spurious optimizations, we then evaluated our model outputs for correctness using the  bounded model checker for x86-64 assembly code available in \textsc{STOKE} which makes use of the Z3 SMT solver~\cite{de2008z3}. \ed{We should probably cite STOKE too...}
-In theory, the model checker should be able to accurately check for correctness as long as the number of loop iterations stays below the configured maximum bound of 4, and the process does not timeout by taking over 180 seconds.
-We report these results in Table \ref{tab:z3_results}. 
+%In these cases, the programs would cause branching behavior by testing for equivalence between two different variables, or between a variable and a constant 
+% (e.g. $\textbf{if} \;\; \mathbf{x\;==\;0:\; ...}$)
+%,. Notwithstanding other program behavior, sampling an exact constant to 
+% the probability that a randomly generated testcase will trigger the branch is equal to $(2^{-64})$ and thus highly unlikely. 
+%, so it is highly likely that certain important constants were not sampled though the automated testcase generation process.
+% \ed{Thus, randomly sampled testcases are insufficient for ...}
+
+% Given that randomly generated testcases were insufficient to reveal many spurious optimizations, we then evaluated our model outputs for correctness using the  bounded model checker for x86-64 assembly code available in \textsc{STOKE} which makes use of the Z3 SMT solver \cite{de2008z3, churchill2017sound}. 
+% In theory, the model checker should be able to accurately check for correctness as long as the number of loop iterations stays below the configured maximum bound of 4, and the process does not timeout by taking over 180 seconds.
+% We report these results in Table \ref{tab:z3_results}. 
 
 
 When evaluating with SMT solvers, the proportion of programs that outperform the -Og baseline drops dramatically. Nevertheless, the fine-tuning procedure still allows for a marginal improvement over the pre-trained baseline. Moreover, we see the proportion of programs for the fine-tuned model that beat the GCC -O0 baseline drops below the pre-trained model. These programs that were unable to beat the GCC baseline were in-fact declared by the SMT solver to not be logically equivalent: we hypothesize that the fine-tuned model over-fit on spurious programs through the hill-climbing process. As a result, it may have learned some new valid optimizations; yet it evidently lost its ability to more-consistently perform less-aggressive, semantics-preserving optimizations. 
@@ -556,17 +570,151 @@ Z3 Train/Z3 Eval  & --.--\%\\
 
 \subsubsection{Removing Register Copies}
 
-Although many x86-64 instructions allow operands to be stored in any register, some do not.  One example is the \es{decorate me} \texttt{mulq} instruction, which multiplies two 64-bit numbers and stores the 128-bit result without truncation. This instruction only takes one operand as an argument.  For example, \texttt{mulq \%rcx} computes \texttt{\%rax} * \texttt{\%rcx}, and stores the upper 64-bit of the result in \%rdx and the lower bits in \%rax.  The registers \%rax and \%rdx are fixed and cannot be changed.
+Most x86-64 instructions allow operands to be stored in any register.  A notable exception is the \es{decorate me} \texttt{mulq} instruction, which multiplies two 64-bit operands and stores the 128-bit result without truncation.
 %
-\es{Paste assembly code here}
-
-The compiled code at -Og shifts the input from the \%rdi register to the right by 3, and stores the result in \%rax.  This value is then used by the \texttt{mulq \%rcx} instruction, but since the value is not in \%rax, the compiler uses an extra instruction to copy the shifted value to \%rax.
+Though this instruction multiplies two numbers, it only takes one operand as an argument.  By definition, \texttt{mulq op} computes the multiplication of \texttt{\%rax} and \texttt{op}, and then stores the upper 64-bits of the result in \%rdx and the lower bits in \%rax.  The registers \%rax and \%rdx are fixed and cannot be changed.
 %
-The model, on the other hand, learn
+\ed{@pcyin Can we put the two listings side by side?  We can truncate the long constant, it's not important.  It would also be nice if we could highlight the changes.}
+\begin{figure}
+% -Og compiler code
+    \begin{lstlisting}
+movq %rdi, %rdx
+shrq $0x3, %rdx
+movq $0x20c49ba5e353f7cf, %rcx
+% Here is the extra copy
+movq %rdx, %rax
+mulq %rcx
+...
+    \end{lstlisting}
+
+  % movq %rdx, %rcx
+  % shrq $0x4, %rcx
+  % imulq $0x3e8, %rcx, %rcx
+  % subq %rcx, %rdi
+  % imulq $0xf4240, %rdi, %rcx
+  % movq %rdx, %rax
+  % shrq $0x4, %rax
+  % movq %rcx, %rdx
+  % retq
+
+% Rewritten
+    \begin{lstlisting}
+movq %rdi, %rax
+shrq $0x3, %rax
+movq $0x20c49ba5e353f7cf, %rdx
+mulq %rdx
+...
+    \end{lstlisting}
+    \centering
+    \caption{Optimized code that beats \texttt{gcc -Og} by eliminating a register copy.}
+    \label{fig:elim_copy}
+
+\end{figure}
+\ed{Do we also want the -O0 code?}
+
+As \cref{fig:elim_copy} shows,
+\texttt{gcc -Og} shifts the input from the \texttt{\%rdi} register to the right by three bits, and stores the result in the \texttt{\%rdx} register.  This value is then used by the \texttt{mulq \%rcx} instruction, but since the value is not in \texttt{\%rax}, the compiler uses an extra instruction to copy the shifted value from \texttt{\%rdx} to \texttt{\%rax}.
+%
+The model, on the other hand, learned that because \texttt{\%rax} was not live --- it was not currently holding a value that is needed later --- it could simply store the result of the shift in \texttt{\%rax}, and did not need to use an extra copy in order to invoke the \texttt{mulq} instruction.
+
+\subsubsection{Rewriting Conditional Move Instructions}
+
+\ed{We see this a lot in the sampled examples.  But I'm not sure that STOKE is correct here in saying the model's code is faster.  I always thought that conditional moves were better for optimized code.}
+
+The performance model in STOKE assigns a relatively high cost to conditional move instructions, which move a value from one operand to another, but only if the designated condition holds.  For example, in \cref{fig:conditional_move}, \texttt{gcc -Og} moves the \texttt{\%edi} register to \texttt{\%eax}, the output register, and then conditionally moves the \texttt{\%esi} register to \texttt{\%eax} if \texttt{\%esi} is greater than or equal to \texttt{\%esi}.
+%
+The model rewrites the code using a conditional branch instead of a conditional move.  We have observed the model doing this in many examples, likely because STOKE estimates the conditional branch model to be more efficient.
+
+\begin{figure}
+    \centering
+    % gcc -Og
+    \begin{lstlisting}
+cmpl %edi, %esi     
+movl %edi, %eax    
+cmovgel %esi, %eax 
+retq 
+    \end{lstlisting}
+    % Rewrite
+    \begin{lstlisting}
+cmpl %edi, %esi     
+jle .L1
+movl %esi, %eax
+retq
+.L1:
+movl %edi,%eax
+retq
+    \end{lstlisting}
+    \caption{Code rewritten to use conditional branches instead of conditional moves by the model.}
+    \label{fig:conditional_move}
+\end{figure}
+
+\subsubsection{Constant Bitvector Optimizations}
+
+In several examples, the model detects bitvector operations that can be optimized to a constant value.  For example, in \cref{fig:bitvector}, \texttt{gcc -Og} uses three instructions to initialize \%eax. The first two instructions write \texttt{0x18} and \texttt{0} as byte-size constants to adjacent stack locations.  The final instruction copies the 16-bit stack location containing both constants into \%eax.  The model realizes that this is equivalent to the much more efficient operation of moving \texttt{0x00000018} (or equivalently, \texttt{0x18}) to \%eax, which effectively reduces three instructions and three memory operations to one instruction with no memory operations.
+
+\ed{We also beat -Og here, if we have room to show it.}
+
+\begin{figure}
+%-O0
+\begin{lstlisting}
+pushq %rbp
+movq %rsp, %rbp
+movb $0x0, -0x1(%rbp)
+movb $0x18, -0x2(%rbp)
+mozwl -0x2(%rbp), %eax
+popq %rbp
+retq
+\end{lstlisting}
+Rewrite
+\begin{lstlisting}
+movl $0x18, %eax
+retq
+\end{lstlisting}
+    \centering
+    \caption{Optimized code that reduces three instructions and three memory operations to one instruction with no memory operations.}
+    \label{fig:bitvector}
+\end{figure}
+
+\subsubsection{Instruction Combination}
+
+x86-64 is a CISC architecture, which means that many instructions have complex side-effects that can be leveraged for efficient computation.  
+%
+A common example of this involves the \texttt{test op1, op2} instruction.  The instruction is primarily used to  test whether an operand is zero, by passing it as both arguments.  However, internally, the instruction first computes the bitwise AND of \texttt{op1} and \texttt{op2}, and then compares this value.   %by testing , which sets flags according to the bitwise AND of \texttt{op1} and \texttt{op2}.  
+If the value being compared first needs to be masked out with a constant bitmask, which is a common operation, this can be accomplished by passing the constant bitmask as an operand.
 
 
 
-If the operands are not already using those registers, the values must be copied.  However, the model learned to rearrange registers to 
+%The model also learns how to leverage some of the side-effects of some instructions to reduce the overall number of instructions.  
+
+The \texttt{gcc -O0} code in \cref{fig:test_and} does \emph{not} perform this optimization.  Instead, before the test, it explicitly performs a bitwise AND operation with the mask (0x142) and stores the result in the \%eax register.  It then tests whether the value of \texttt{\%eax} is zero.  In contrast, the model realizes that since the results of the bitwise AND computation is only used by the \texttt{test} instruction, it is advantageous to combine it into the test instruction by passing the bitmask \texttt{0x142} as an operand.  This is faster, and in some cases can reduce register pressure.
+
+\begin{figure}
+    \centering
+    % O0
+    \begin{lstlisting}
+pushq %rbp
+movq %rsp, %rbp
+movl %edi, -0x4(%rbp)
+movl -0x4(%rbp), %eax
+andl $0x142, %eax
+testl %eax, %eax
+setne %al
+movzbl %al, %eax
+popq %rbp
+retq
+    \end{lstlisting}
+    \begin{lstlisting}
+testl $0x142, %edi
+je .L1
+movl $0x1, %eax
+retq
+.L1:
+movl $0x0, %eax
+retq
+    \end{lstlisting}
+    \caption{Optimized code that implements a bitwise mask and a test using a single instruction.}
+    \label{fig:test_and}
+\end{figure}
 
 \section{Implications and Future Work}
 
