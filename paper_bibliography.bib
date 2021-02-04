@@ -430,3 +430,48 @@ url={https://openreview.net/forum?id=H1Xw62kRZ},
   year={2008},
   organization={Springer}
 }
+
+@inproceedings{chen-etal-2018-best,
+    title = "The Best of Both Worlds: Combining Recent Advances in Neural Machine Translation",
+    author = "Chen, Mia Xu  and
+      Firat, Orhan  and
+      Bapna, Ankur  and
+      Johnson, Melvin  and
+      Macherey, Wolfgang  and
+      Foster, George  and
+      Jones, Llion  and
+      Schuster, Mike  and
+      Shazeer, Noam  and
+      Parmar, Niki  and
+      Vaswani, Ashish  and
+      Uszkoreit, Jakob  and
+      Kaiser, Lukasz  and
+      Chen, Zhifeng  and
+      Wu, Yonghui  and
+      Hughes, Macduff",
+    booktitle = "Proceedings of the 56th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+    month = jul,
+    year = "2018",
+    address = "Melbourne, Australia",
+    publisher = "Association for Computational Linguistics",
+    url = "https://www.aclweb.org/anthology/P18-1008",
+    doi = "10.18653/v1/P18-1008",
+    pages = "76--86",
+    abstract = "The past year has witnessed rapid advances in sequence-to-sequence (seq2seq) modeling for Machine Translation (MT). The classic RNN-based approaches to MT were first out-performed by the convolutional seq2seq model, which was then out-performed by the more recent Transformer model. Each of these new approaches consists of a fundamental architecture accompanied by a set of modeling and training techniques that are in principle applicable to other seq2seq architectures. In this paper, we tease apart the new architectures and their accompanying techniques in two ways. First, we identify several key modeling and training techniques, and apply them to the RNN architecture, yielding a new RNMT+ model that outperforms all of the three fundamental architectures on the benchmark WMT{'}14 English to French and English to German tasks. Second, we analyze the properties of each fundamental seq2seq architecture and devise new hybrid architectures intended to combine their strengths. Our hybrid models obtain further improvements, outperforming the RNMT+ model on both benchmark datasets.",
+}
+
+@inproceedings{zhang-etal-2018-accelerating,
+    title = "Accelerating Neural Transformer via an Average Attention Network",
+    author = "Zhang, Biao  and
+      Xiong, Deyi  and
+      Su, Jinsong",
+    booktitle = "Proceedings of the 56th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+    month = jul,
+    year = "2018",
+    address = "Melbourne, Australia",
+    publisher = "Association for Computational Linguistics",
+    url = "https://www.aclweb.org/anthology/P18-1166",
+    doi = "10.18653/v1/P18-1166",
+    pages = "1789--1798",
+    abstract = "With parallelizable attention networks, the neural Transformer is very fast to train. However, due to the auto-regressive architecture and self-attention in the decoder, the decoding procedure becomes slow. To alleviate this issue, we propose an average attention network as an alternative to the self-attention network in the decoder of the neural Transformer. The average attention network consists of two layers, with an average layer that models dependencies on previous positions and a gating layer that is stacked over the average layer to enhance the expressiveness of the proposed attention network. We apply this network on the decoder part of the neural Transformer to replace the original target-side self-attention model. With masking tricks and dynamic programming, our model enables the neural Transformer to decode sentences over four times faster than its original version with almost no loss in training time and translation performance. We conduct a series of experiments on WMT17 translation tasks, where on 6 different language pairs, we obtain robust and consistent speed-ups in decoding.",
+}

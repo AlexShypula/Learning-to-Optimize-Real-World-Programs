@@ -131,6 +131,9 @@ Results demonstrate that our method is able to discover optimizations that pass 
 \section{Introduction}
 \label{submission}
 
+\gn{Overall, the background in the paper feels under-described for an ML audience. Try to think back to before you started this project, think about the knowledge you had of compilers etc. Would you understand everything you wrote here? If not, try to add (very brief) descriptions of background knowledge necessary to follow the description.}
+\gn{Now, attacking this from the opposite direction, the details seem a bit under-described for someone who wants to re-implement your work. Try to look at previous papers on programs at ML conferences, and look at their level of description. You don't need to match this, but they would be good guides. Also note how they have lots of figures. \url{https://miltos.allamanis.com/publicationfiles/allamanis2018learning/allamanis2018learning.pdf} \url{https://arxiv.org/pdf/1803.09473.pdf} \url{https://arxiv.org/pdf/2101.12087.pdf} }
+
 Software touches virtually every industry and consumer in the modern information economy.
 At the same time, the resources that we pour into running software are immense -- for example, recent estimates suggest that \emph{data centers alone} represent 1\% of global energy usage \citep{masanet2020recalibrating}.
 Because of this, the \emph{efficiency} with which we can run the programs is of paramount importance.
@@ -183,7 +186,7 @@ The authors in \cite{chen2018learning} apply machine learning to help guide sear
 \section{Problem Formulation}
 
 In describing the task of neural program optimization, we build on notation from the program synthesis formulation in \cite{bunel2018leveraging} \gn{use ``citet'' for citations that are part of a sentence. Also in other places (like the future work)}. The task of program optimization through neural sequence models 
-\gn{Do we need ``through neural sequence models''? Be best to skip this and make it more broad.} 
+\gn{Do we need ``through neural sequence models''? Be best to skip this and make it more broad in the problem formulation.} 
 is transducing an (unoptimized) program $\text{F}_u$ into an optimized one $\text{F}_o$, where $\text{F}_o$ is better than $\text{F}_u$ under some cost function $\mathbfcal{C}$, such as runtime, memory footprint or energy consumption.
 %and equivalent under a distance metric $\mathbfcal{D}$. 
 %Our goal is to learn a neural model  $f_{\theta}: \text{F}_u \mapsto \text{F}_o$. 
@@ -192,7 +195,7 @@ is transducing an (unoptimized) program $\text{F}_u$ into an optimized one $\tex
 Because each program is a function that maps inputs to outputs, we will use $I$ to represent the hardware state prior to executing the program (i.e., input) and $O$ to represent the hardware state after executing the program (i.e., output).
 
 
-Specifically, our goal is to learn a neural model $f_{\theta}: \text{F}_u \mapsto \text{F}_o$ such that a model-generated (optimized) program $\hat{F_o}$ attains lower cost under the cost function $\mathcal{C}$ evaluated on a suite of $K$ input-output examples $\{ IO \}_{k=1}^K$:
+Specifically, our goal is to learn a neural \gn{again, is ``neural'' necessary?} model $f_{\theta}: \text{F}_u \mapsto \text{F}_o$ such that a model-generated (optimized) program $\hat{F_o}$ attains lower cost under the cost function $\mathcal{C}$ evaluated on a suite of $K$ input-output examples $\{ IO \}_{k=1}^K$:
 %on our synthesized program $\hat{\text{F}}_o$,
 %and observing $\mathcal{C}$ which may measure approximate runtime, energy consumption, or other goals. Furthermore, we may evaluate our distance function $\mathcal{D}$ either as equivalence under all testcases, or through verification by using an SMT solver. We consider a program optimized when: 
 % cost function $\mathbfcal{C}$ which is able to evaluate desired program behavior, such as approximate runtime or energy consumption. For the transductive objective, the learned model's objective is then the following: 
@@ -240,9 +243,12 @@ In situations in which we desire to learn optimizations through demonstrations, 
     \end{split}
 \end{equation}
 
+In \S\ref{sec:benchmark} we describe one concrete instantiation of this problem formulation on real-world programs, and in \S\ref{sec:learning} we describe our methodology for modeling and learning $f_\theta$ within this setup.
+
 
 
 \section{Real-World Optimization Benchmark}
+\label{sec:benchmark}
 
 % \subsection{Metrics and Program Representation}
 
@@ -266,29 +272,40 @@ In order to create a dataset of functions whose re-writes could be executed and 
 %\pyin{Could you explain the last sentence more?}
 \ed{I also found the previous sentence confusing.}
 
-\gn{Checked up to here.}
-
-Because we measure equivalence by examining the program's effects on the hardware states, we need to determine which parts of the hardware state are relevant and irrelevant to program correctness. \ed{Kind of vague.  Determine which registers are inputs and outputs of the function, since this is not always clear at the binary level?}  For this, we use apply a greedy algorithm to the unoptimized and compiler optimized program funcitons to determine which parts of the hardware state are relevant to measuring equivalence. The aim of this algorithm was to be overly-conservative with regard to regions of the hardware state that could differ from the source program. More details on the dataset and the greedy algorithm are located in Appendix ------ \alex{To write later}.
+Because we measure equivalence by examining the program's effects on the hardware states, we need to determine which parts of the hardware state are relevant and irrelevant to program correctness. \ed{Kind of vague.  Determine which registers are inputs and outputs of the function, since this is not always clear at the binary level?}  For this, we use apply a greedy algorithm to the unoptimized and compiler optimized program funcitons to determine which parts of the hardware state are relevant to measuring equivalence. The aim of this algorithm was to be overly-conservative with regard to regions of the hardware state that could differ from the source program. More details on the dataset and the greedy algorithm are located in Appendix ------ \alex{To write later} \gn{Even if the details go in the appendix, it'd be good to put the general idea here.}.
 
 
-Although the subset of functions available to be executed is relatively small compared to the dataset of all available programs, it is still larger in magnitude of synthetic programs used in \cite{shi2020}. Furthermore, the scale of the dataset still can pose challenges in efficient training given the potential for latency in assembling and evaluating re-writes: in our experiments, it sometimes took as long as 25 seconds to evaluate a candidate program re-write. We compared the time it took to assemble and evaluate our ``real-world" functions to a set of optimization benchmarks: \textsc{Hacker's Delight} \cite{warren2013hacker}, consisting of bit-twiddling hacks. We found on average that the time to assemble and evaluate functions from the \GH{} dataset took ---- longer to assemble and evaluate compared to program functions from \textsc{Hacker's Delight} \alex{TODO benchmarking here}. \ed{Very abrupt introduction to Hacker's Delight benchmarks.  Why do we care about assembly + evaluation time?}
+\paragraph{Comparison to Other Optimization Benchmarks}
+\gn{Would be good to lead with: ``As mentioned in the introduction, automatic program optimization has been examined in other settings; some representative ones are listed in Table XXX.'' Then in Table XXX you list other datasets, sizes, domains. This will give the background to address Ed's comment below that the introduction of Hacker's delight is sudden.}
+Although the subset of functions available to be executed is relatively small compared to the dataset of all available programs, it is still larger in magnitude of synthetic programs used in \cite{shi2020} \gn{citet}. Furthermore, the scale of the dataset still can pose challenges in efficient training given the potential for latency in assembling and evaluating re-writes: in our experiments, it sometimes took as long as 25 seconds to evaluate a candidate program re-write. We compared the time it took to assemble and evaluate our ``real-world" functions to a set of optimization benchmarks: \textsc{Hacker's Delight} \cite{warren2013hacker}, consisting of bit-twiddling hacks. We found on average that the time to assemble and evaluate functions from the \GH{} dataset took ---- longer to assemble and evaluate compared to program functions from \textsc{Hacker's Delight} \alex{TODO benchmarking here}. \ed{Very abrupt introduction to Hacker's Delight benchmarks.  Why do we care about assembly + evaluation time?}
 
 \section{Learning Program Optimizations}
-% \label{gen_inst}
+\label{sec:learning}
 
 %We perform a two-step process for learning program optimization, which consists first of supervised maximum-likelihood training to learn the compiler-optimized outputs, then fine tuning is performed to directly minimize the cost of model predictions.
 
 We perform a two-step process for learning program optimization.
-In the first step, we pre-train a neural sequence generation model using compiler-optimized outputs as targets.
-Next, as an effort to outperform the compiler, we fine-tune the neural optimizer using a hill-climbing algorithm to directly minimize the expected cost of model-optimized programs.
+In this section, we first describe our underlying model, then describe the first step of pre-training the model using imitation learning, and finally describe the second step of using a hill-climbing algorithm that directly minimizes the expected cost of model-optimized programs \gn{Does it actually minimize the expected cost (in a mathematical sense)? I don't think so.}.
 %\pcyin{We need to change the term ``fine-tuning''. Can we say ``RL'' here? Perhaps not because it's not exactly RL?}
 %using the outputs of the neural model itself. 
 %For the first phase, the dataset of 1.77 million functions mined from open source projects was used. In the second phase we fine-tune the pre-trained model using an iterative-hill climbing algorithm. 
 
+\subsection{Underlying Model}
+
+\gn{I think it'd be best to describe your model first, as that is shared between the training algorithms. You should back-reference the equations in the problem formulation $f_\theta$. How do you represent programs. Here, you don't describe the inputs and outputs ()}
+
+Our neural optimizer \gn{not optimizer, model} uses a standard Transformer-based encoder \citep{vaswani2017attention}, but swapped our decoder with an LSTM-based decoder \citep{hochreiter1997long,chen-etal-2018-best}.
+This was mainly done to speed-up prediction within the iterative training loop described in \S\ref{sec:hillclimbing}, as transformers suffer from quadratic decoding time in sequence length \citep{chen-etal-2018-best}.
+\gn{More detail. What are your inputs and outputs. Do you do subword tokenization? Can you give an example of what the inputs and outputs look like?}
+
+\gn{You have a pretty extensive description below on why you \emph{don't} do what you don't do, but only one sentence explaining what you actually do :)}
+While it is often advantageous to leverage a grammar for code generation tasks \citep{parisotto2016neuro,yin-neubig-2017-syntactic}, we chose not to do so in our experiments. A primary reason was for simplicity. An additional reason was access to large amounts of data for supervised learning, which may implicitly learn syntax. Previous work in machine-learning-based program synthesis has demonstrated that while a grammar may help greatly in low-data program synthesis regimes, it may do little to improve both MLE and RL-based experiments when extensive data is available for pre-training \cite{bunel2018leveraging}.
+
+\subsection{Pre-training}
 In the pre-training step, we train a neural model learn common optimizations performed by existing compilers (e.g., GCC) using maximum likelihood estimation. 
 The training set consists of compiler-optimized outputs for the xxx \pcyin{how many?} functions mined from \textsc{GitHub}.
-Our neural optimizer is a Transformer-based model, but swapped our decoder with an LSTM-based decoder to speed-up prediction. 
-While it is often advantageous to leverage a grammar for code generation tasks \citep{yin-neubig-2017-syntactic, parisotto2016neuro}, we chose not to do so in our experiments. A primary reason was for simplicity. An additional reason was access to large amounts of data for supervised learning, which may implicitly learn syntax. Previous work in machine-learning-based program synthesis has demonstrated that while a grammar may help greatly in low-data program synthesis regimes, it may do little to improve both MLE and RL-based experiments when extensive data is available for pre-training \cite{bunel2018leveraging}. Additional details regarding training parameters are located in appendix - \alex{need to insert an appendix on this}. 
+Additional details regarding training parameters are located in appendix - \alex{need to insert an appendix on this}. 
+\gn{I think it'd be better to put some of the detail here. This is one of the important parts of our algorithm.}
 
 
 \subsection{Iterative Hill-Climbing}
@@ -356,7 +373,9 @@ Algorithm \ref{alg:hill_climbing} bears some resemblance to self-imitation learn
 
 % \alex{I think this would be nice to include, even if this underperforms any other method. It may be challenging for the reader to follow how you derive this w/out visiting the appendix}
 
-\subsection{Actor-Learner Architecture}
+\paragraph{Actor-Learner Architecture}
+\gn{Is this an architecture or algorithm?}
+\gn{I changed this to a paragraph, as it's part of the iterative hill-climbing approach.}
 
 \pcyin{Maybe briefly explain why we use multiprocessing: because evaluating $\mathcal{D}(\cdot)$ is slow. Would be better to given a rough runtime number.}
 Importantly, to perform our experiments at scale, we utilize an actor-learner architecture  \citep{liang2018memory, espeholt2018impala}. Specifically, before the training process begins, multiple actor threads are created which inherit the parameters of the parent learner and the dataset. For every iteration, each of the actor threads independently samples $B_{\textrm{ex}}$ from the distribution of the inherited model. 
@@ -493,7 +512,7 @@ Hill-Climbing trans.  & --.--\% & --.--\% \\
 
 
 \begin{table}[t]
-\caption{This table reports the proportion of programs that manual evaluation determined correct. This was performed only for the examples within the hold-out test set for the inductive task and the models trained with the iterative hill-climbing algorithm.  \textbf{TC} corresponds to experiments where correctness was determined only by passing all testcases; whereas, \textbf{SMT} corresponds to experiments where correctness was determined by passing all testcases \textit{and} verifying via the SMT solver}
+\caption{This table reports the proportion of programs that manual evaluation determined correct. This was performed only for the examples within the hold-out test set for the inductive task and the models trained with the iterative hill-climbing algorithm and for the programs that outperformed GCC -Og.  \textbf{TC} corresponds to experiments where correctness was determined only by passing all testcases; whereas, \textbf{SMT} corresponds to experiments where correctness was determined by passing all testcases \textit{and} verifying via the SMT solver}
 \label{tab:manual}
 \vskip 0.15in
 \begin{center}
@@ -503,7 +522,7 @@ Hill-Climbing trans.  & --.--\% & --.--\% \\
 \toprule
 Task & Proportion Verified \\
 \midrule
-TC Train/TC Eval  & --.--\%\\
+TC Train/TC Eval  & 22.72\%\\
 TC Train/Z3 Eval   & 91.30\%\\
 Z3 Train/Z3 Eval  & --.--\%\\
 \bottomrule
@@ -516,6 +535,8 @@ Z3 Train/Z3 Eval  & --.--\%\\
 
 
 \section{Implications and Future Work}
+
+\es{Very low priority, but one thing we might want to add for Future Work is to set live out parameters by parsing the C function header instead of our approximation algorithm.}
 
 The task of using machine learning to learn, discover, and efficiently optimize programs in the real world is a very challenging one. Our work has shown that a simple iterative hill climbing algorithm is capable of actually discovering new optimizations without the use of a grammar or other information about the programming language, besides demonstration. 
 
