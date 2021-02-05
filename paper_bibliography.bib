@@ -500,3 +500,42 @@ url={https://openreview.net/forum?id=H1Xw62kRZ},
   year={2017},
   publisher={ACM New York, NY, USA}
 }
+
+@article{10.1145/1993316.1993506,
+author = {Gulwani, Sumit and Jha, Susmit and Tiwari, Ashish and Venkatesan, Ramarathnam},
+title = {Synthesis of Loop-Free Programs},
+year = {2011},
+issue_date = {June 2011},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {46},
+number = {6},
+issn = {0362-1340},
+url = {https://doi.org/10.1145/1993316.1993506},
+doi = {10.1145/1993316.1993506},
+abstract = {We consider the problem of synthesizing loop-free programs that implement a desired functionality using components from a given library. Specifications of the desired functionality and the library components are provided as logical relations between their respective input and output variables. The library components can be used at most once, and hence the library is required to contain a reasonable overapproximation of the multiset of the components required.We solve the above component-based synthesis problem using a constraint-based approach that involves first generating a synthesis constraint, and then solving the constraint. The synthesis constraint is a first-order ∃∀ logic formula whose size is quadratic in the number of components. We present a novel algorithm for solving such constraints. Our algorithm is based on counterexample guided iterative synthesis paradigm and uses off-the-shelf SMT solvers.We present experimental results that show that our tool Brahma can efficiently synthesize highly nontrivial 10-20 line loop-free bitvector programs. These programs represent a state space of approximately 2010 programs, and are beyond the reach of the other tools based on sketching and superoptimization.},
+journal = {SIGPLAN Not.},
+month = jun,
+pages = {62–73},
+numpages = {12},
+keywords = {program synthesis, smt, component-based synthesis}
+}
+
+
+@inproceedings{10.1145/1993498.1993506,
+author = {Gulwani, Sumit and Jha, Susmit and Tiwari, Ashish and Venkatesan, Ramarathnam},
+title = {Synthesis of Loop-Free Programs},
+year = {2011},
+isbn = {9781450306638},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/1993498.1993506},
+doi = {10.1145/1993498.1993506},
+abstract = {We consider the problem of synthesizing loop-free programs that implement a desired functionality using components from a given library. Specifications of the desired functionality and the library components are provided as logical relations between their respective input and output variables. The library components can be used at most once, and hence the library is required to contain a reasonable overapproximation of the multiset of the components required.We solve the above component-based synthesis problem using a constraint-based approach that involves first generating a synthesis constraint, and then solving the constraint. The synthesis constraint is a first-order ∃∀ logic formula whose size is quadratic in the number of components. We present a novel algorithm for solving such constraints. Our algorithm is based on counterexample guided iterative synthesis paradigm and uses off-the-shelf SMT solvers.We present experimental results that show that our tool Brahma can efficiently synthesize highly nontrivial 10-20 line loop-free bitvector programs. These programs represent a state space of approximately 2010 programs, and are beyond the reach of the other tools based on sketching and superoptimization.},
+booktitle = {Proceedings of the 32nd ACM SIGPLAN Conference on Programming Language Design and Implementation},
+pages = {62–73},
+numpages = {12},
+keywords = {component-based synthesis, smt, program synthesis},
+location = {San Jose, California, USA},
+series = {PLDI '11}
+}
