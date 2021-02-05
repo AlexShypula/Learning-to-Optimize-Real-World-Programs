@@ -13,6 +13,7 @@
 \usepackage{xspace}
 \usepackage{soul}
 \usepackage{color}
+\usepackage{multirow}
 
 % hyperref makes hyperlinks in the resulting PDF.
 % If your build breaks (sometimes temporarily if a hyperlink spans a page)
@@ -63,6 +64,21 @@
 \newcommand\popt{\ensuremath{{\mathrm{F}_o}}}
 \def\correctfuncio/{\ensuremath{\mathcal{D}_\textrm{I/O}}}
 \def\correctfuncsmt/{\ensuremath{\mathcal{D}_\textrm{verifier}}}
+
+\Crefname{algorithm}{Algo.}{Algorithms}
+\Crefname{table}{Tab.}{Tables}
+\crefname{section}{\S}{\S\S}
+\crefname{subsection}{\S}{\S\S}
+
+\sidecaptionvpos{figure}{t}
+
+\usetikzlibrary{tikzmark}
+
+\renewcommand{\sectionautorefname}{\S}
+\renewcommand{\subsectionautorefname}{\S}
+\renewcommand{\subsubsectionautorefname}{\S}
+\renewcommand*{\figureautorefname}{Fig.}
+\renewcommand*{\tableautorefname}{Tab.}
 
 % \usepackage[linesnumbered]{algorithm2e}
 
@@ -217,7 +233,7 @@ The authors in \cite{chen2018learning} apply machine learning to help guide sear
 \section{Problem Overview}
 
 %\pcyin{DISCUSSED IN SLACK: Can we sell our paper as ``learning to optimize real-world \textbf{C} programs''? It sounds fancier. I understand what we are actually doing is to learn to optimize X86-64 assembly. But since we mention in \cref{sec:benchmark} that we are optimizing C programs. It might sound confusing for ML people who do not know much about program optimization:joycryface:.}
-\pcyin{Throughout the paper I mistakenly used the term ``Learning to optimize C programs''. I will revise accordingly.}
+% \pcyin{Throughout the paper I mistakenly used the term ``Learning to optimize C programs''. I will revise accordingly.}
 
 \subsection{Problem Formation}
 
@@ -238,10 +254,10 @@ Specifically, our goal is to learn a model $f_{\theta}: \text{F}_u \mapsto \text
 \begin{equation}
     \label{eqn:optimizaiton_goal}
     \begin{split}
-        \mathbfcal{C} \Big(\hat{\textrm{F}}_{o}; \{IO_k\}_{k=1...K} \Big)  \ 
+        \mathcal{C} \Big(\hat{\textrm{F}}_{o}; \{IO_k\}_{k=1}^k \Big)  \ 
         < \ 
-        \mathbfcal{C} \Big(\textrm{F}_{u}; \{IO_k\}_{k=1...K}\Big) \\
-         s.t. \;\; \mathbfcal{D}( \ 
+        \mathcal{C} \Big(\textrm{F}_{u}; \{IO_k\}_{k=1}^K \Big) \\
+         s.t. \;\; \mathcal{D}( \ 
                         \hat{\textrm{F}}_{o}, \textrm{F}_{u} ) \ 
                         = 0  % \;\; \
         %  \hat{\textrm{F}}_{opt}^i(I_k^i) = \ 
@@ -251,7 +267,7 @@ Specifically, our goal is to learn a model $f_{\theta}: \text{F}_u \mapsto \text
 \end{equation}
 
 where $\mathcal{D}(\cdot) \in \{ 0, 1 \}$ is an indicator function that measures if the model optimized program $\hat{F}_o$ is functionally equivalent to the original one $\p$. 
-An intuitive choice of $\mathcal{D}$ is directly executing $\p$ and $\hat{F}_o$ on the test cases $\{ IO \}_{k=1}^K$ and checking outputs equivalence. The cost function $\mathcal{C}(\cdot)$ considers metrics like runtime and the number of instructions in a program.
+An intuitive choice of $\mathcal{D}$ is directly executing $\p$ and $\hat{F}_o$ on the test cases $\{ IO \}_{k=1}^K$ and checking the outputs equivalence. The cost function $\mathcal{C}(\cdot)$ considers metrics like runtime and the number of instructions in a program.
 We will present more details in \cref{sec:setup}.
 %, and could be computed by directly executing the optimized program on the test cases $\{ IO \}_{k=1}^K$. 
 %Additionally, we explain how $\mathcal{D}$ may be calculated by using the suite of test cases, or by incorporting other methods like SMT-based solvers. 
@@ -354,8 +370,8 @@ Ours  & 15,994 & \ding{51} &\ding{51} \\
 %We perform a two-step process for learning program optimization, which consists first of supervised maximum-likelihood training to learn the compiler-optimized outputs, then fine tuning is performed to directly minimize the cost of model predictions.
 
 %We perform a two-step process for learning program optimization.
-In this section we elaborate on our approach that learns to optimize real-world C programs. 
-we first describe the underlying neural model before introducing the learning algorithm.
+In this section we elaborate on our approach that learns to optimize real-world programs. 
+We first describe the underlying neural model before introducing the learning algorithm.
 
 %In this section, we first describe our underlying model, then describe the first step of pre-training the model using imitation learning, and finally describe the second step of using a hill-climbing algorithm that directly minimizes the cost of model-optimized programs \gn{Does it actually minimize the expected cost (in a mathematical sense)? I don't think so.}\pcyin{Done: deleted ``expected''}.
 %\pcyin{We need to change the term ``fine-tuning''. Can we say ``RL'' here? Perhaps not because it's not exactly RL?}
@@ -366,7 +382,7 @@ we first describe the underlying neural model before introducing the learning al
 
 % \gn{I think it'd be best to describe your model first, as that is shared between the training algorithms. You should back-reference the equations in the problem formulation $f_\theta$. How do you represent programs. Here, you don't describe the inputs and outputs ()} \alex{In section 6.1 implementation specific details are included and I've tried to add relevant notation }
 
-Our program optimization model $f_{\theta}$ is a neural sequence-to-sequence network, where input (original) and output (optimized) programs are represented as sequences of tokens.
+Our program optimization model $f_{\theta}$ is a neural sequence-to-sequence network, where input (unoptimized) and output (optimized) programs are represented as sequences of tokens.
 Specifically, $f_{\theta}$ is parameterized with a standard Transformer-based encoder \citep{vaswani2017attention}, but with a LSTM-based decoder \citep{hochreiter1997long,chen-etal-2018-best} instead.
 This was done to speed-up prediction within the iterative training loop described in \S\ref{sec:hillclimbing}, as Transformers suffer from quadratic decoding time in sequence length \citep{zhang-etal-2018-accelerating}. We defer more implementation-specific details for our experiments to Section \ref{sec:experiments}. 
 
@@ -377,6 +393,7 @@ While it is often advantageous to leverage a grammar for code generation tasks \
 \cite{bunel2018leveraging}.
 
 \subsection{Learning Algorithm}
+\label{sec:hillclimbing}
 
 To learn to optimize complex real-world programs, we develop a two-stage learning approach.
 First, in a \emph{pre-training} stage, to capture commonly-used optimization heuristics adopted by existing optimizing compilers, we use supervised learning to train the model on the mined corpus $D_o$ of \texttt{GCC}-optimized programs (E.q. 2) described in \cref{sec:benchmark}. 
@@ -390,15 +407,18 @@ First, in the exploration step, an exploration batch $B_{\mathrm{ex}}$ is sample
 For each input program $F^i_u$ in $B_{\mathrm{ex}}$, we sample a model-predicted optimization $\hat{F}^u_o$, and execute $\hat{F}^u_o$ on the test the I/O test suite to compute the cost function $\mathcal{C}(\cdot)$.
 %Each output from the batch is executed on the test cases to test equivalence and its performance characteristics are measured and profiled. 
 If any of the new samples are both functionally equivalent by our distance function $\mathcal{D}(\cdot)$ and also more optimal compared to the compiler-optimized targets in the original dataset, the compiler-optimized target in the dataset is then replaced with the model's newly-discovered optimal rewrite. 
-\pcyin{For each $F^i_u$, are multiple samples of $\hat{F}^i_o$ generated? If that's the case we need to modify Algo 1 to clarify this.}
+% \pcyin{For each $F^i_u$, are multiple samples of $\hat{F}^i_o$ generated? If that's the case we need to modify Algo 1 to clarify this.} \alex{not only 1 per input}
 After the exploration step is taken, in the learning step, a separate training batch $B_{\mathrm{tr}}$ is sampled for maximum-likelihood training from the dataset which may now contain model-optimized targets. \pcyin{The algorithm sketch here is good. We could improve the narrative by connecting each chunks of sentences to line numbers in Algo 1. See \url{https://www.overleaf.com/read/qmxxdyrnqjft}(lines 139 to 164) for an example.}
 
-\paragraph{Discussion} \cref{alg:hill_climbing} bears some resemblance to self-imitation learning \cite{oh2018self} \pcyin{can you briefly explain why they are similar?}; except we train on the entire sequence, instead of individual actions within a trajectory. Learning with this algorithm may be interpreted as imitation learning on an expert policy that iteratively improves. 
-More formally, it could be interpreted as an extreme case of normalized off-policy reinforcement learning. We refer interested readers to Apendix xxx for more details \alex{TODO: write out and put in bibliography.}. 
+\paragraph{Discussion} \cref{alg:hill_climbing} bears some resemblance to self-imitation learning \cite{oh2018self} in which an agent is trained to imitate previously optimal actions in a reinforcement learning context. This is performed on individual actions in an episode; whereas, we train on the entire sequence. Learning with this algorithm may also be interpreted as imitation learning on an expert policy that iteratively improves. 
 Finally, we remark that an alternative approach for learning program optimizations could be policy gradient methods.
-In this paper we adopt a simpler hill-climbing approach as we observe in our pilot experiments that policy gradient is significantly more unstable, due to the general sparsity of rewards and the long trajectories of programs (\pyin{TODO: xxx} tokens in average).
-Such instability of RL-based learning algorithms confirms with existing research on program synthesis \citep{bunel2018leveraging}.
+In this paper we adopt a simpler hill-climbing approach as we observed in initial pilot experiments that the policy gradient was unstable, due to the general sparsity of rewards and the long trajectories of programs. 
 
+% (\pyin{TODO: xxx} tokens in average).
+% Such instability of RL-based learning algorithms confirms with existing research on program synthesis \citep{bunel2018leveraging}.
+
+
+% More formally, it could be interpreted as an extreme case of normalized off-policy reinforcement learning. We refer interested readers to Apendix xxx for more details \alex{TODO: write out and put in bibliography.}. 
 
 %\subsection{Pre-training}
 
@@ -411,45 +431,44 @@ Such instability of RL-based learning algorithms confirms with existing research
 
 %\subsection{Iterative }
 
-\textcolor{red}{=== Begin of Alex's Version ===}
+% \textcolor{red}{=== Begin of Alex's Version ===}
 
-%\pcyin{When explaining a model/algorithm, it's important to first briefly describe the intuition behind each component/sub-section at the very beginning. Can we say something like the follows here: With the model pre-trained on compiler-optimized examples, we then aim to learn more efficient optimization strategies by directly minimizing the expected cost of model-optimized programs.}
+% %\pcyin{When explaining a model/algorithm, it's important to first briefly describe the intuition behind each component/sub-section at the very beginning. Can we say something like the follows here: With the model pre-trained on compiler-optimized examples, we then aim to learn more efficient optimization strategies by directly minimizing the expected cost of model-optimized programs.}
 
-%%Commented by Pengcheng: 
-Policy gradient algorithms seem like a natural fit for learning how to optimize programs; however, methods based on maximum-likelihood estimation, or imitation learning, provide advantages in terms of stability. Training large neural networks with policy gradient algorithms can be difficult to tune. These difficulties are often attributed to the gradient's high variance which is exacerbated by other issues in program synthesis: a general sparsity of rewards, credit assignment over long sequences, and brittleness of program semantics. 
+% %%Commented by Pengcheng: 
+% Policy gradient algorithms seem like a natural fit for learning how to optimize programs; however, methods based on maximum-likelihood estimation, or imitation learning, provide advantages in terms of stability. Training large neural networks with policy gradient algorithms can be difficult to tune. These difficulties are often attributed to the gradient's high variance which is exacerbated by other issues in program synthesis: a general sparsity of rewards, credit assignment over long sequences, and brittleness of program semantics. 
 
-% \alex{I think this point here contradicts my earlier point about needing to sample from a grammar.... If a grammar really isn't that necessary after pre-training, then is brittle syntax really an issue?? It may be good to leave this out or accept either the nuance proposed / contradiction}
-% \pcyin{Perhaps just removing ``brittleness of program syntax'' is good?}
+% % \alex{I think this point here contradicts my earlier point about needing to sample from a grammar.... If a grammar really isn't that necessary after pre-training, then is brittle syntax really an issue?? It may be good to leave this out or accept either the nuance proposed / contradiction}
+% % \pcyin{Perhaps just removing ``brittleness of program syntax'' is good?}
 
-%Commented by Pengcheng: 
-If an expert policy or expert examples are available, imitation learning can be desirable, because of its stability. Impressive results have been achieved in the game of computer Go and other games by minimizing the cross-entropy between a policy and an expert-like Monte Carlo tree search policy \cite{silver2017mastering}. In program synthesis from I/O example tasks, supervised learning on example programs has been shown to be competitive, and at times even superior to RL \cite{bunel2018leveraging}. The effectiveness of supervised, or imitation learning, on program synthesis tasks is even more surprising, given the programs used as targets were generated from random generation from a grammar. Given that real-world programs demonstrate a degree of naturalness, and thus, a higher degree of predictability and repetition \cite{hindle2012naturalness}, one may expect imitation learning to generally perform even better in practice on general program synthesis tasks. \alex{I feel these 2 sentences are good points but could be a little too much detail.}\pcyin{I agree. We could try shortening this paragraph once Section 6 is nearly done.}
+% %Commented by Pengcheng: 
+% If an expert policy or expert examples are available, imitation learning can be desirable, because of its stability. Impressive results have been achieved in the game of computer Go and other games by minimizing the cross-entropy between a policy and an expert-like Monte Carlo tree search policy \cite{silver2017mastering}. In program synthesis from I/O example tasks, supervised learning on example programs has been shown to be competitive, and at times even superior to RL \cite{bunel2018leveraging}. The effectiveness of supervised, or imitation learning, on program synthesis tasks is even more surprising, given the programs used as targets were generated from random generation from a grammar. Given that real-world programs demonstrate a degree of naturalness, and thus, a higher degree of predictability and repetition \cite{hindle2012naturalness}, one may expect imitation learning to generally perform even better in practice on general program synthesis tasks. \alex{I feel these 2 sentences are good points but could be a little too much detail.}\pcyin{I agree. We could try shortening this paragraph once Section 6 is nearly done.}
 
-% The experiments performed in \cite{bunel2018leveraging} showed that in program synthesis tasks in the Karel domain, maximum-likelihood training on just one correct program example was competitive with reinforcement learning on a reward function defined by executed program outputs. Moreover, maximum-likelihood training outperformed reinforcement learning when the beam size for sampling candidates was large. The result may be surprising as maximum-likelihood training ignores issue of  \textit{program aliasing} in which multiple correct programs, not just one, is capable of satisfying the program specification, and may over-fit on the maximum-likelihood target. 
+% % The experiments performed in \cite{bunel2018leveraging} showed that in program synthesis tasks in the Karel domain, maximum-likelihood training on just one correct program example was competitive with reinforcement learning on a reward function defined by executed program outputs. Moreover, maximum-likelihood training outperformed reinforcement learning when the beam size for sampling candidates was large. The result may be surprising as maximum-likelihood training ignores issue of  \textit{program aliasing} in which multiple correct programs, not just one, is capable of satisfying the program specification, and may over-fit on the maximum-likelihood target. 
 
-% Commented by Pengcheng
+% % Commented by Pengcheng
 
-Inspired by the success of imitation learning in program synthesis, in this paper we propose an intuitive hill-climbing algorithm, a special case of imitation learning, for learning program optimizations. 
-%We use an intuitive iterative hill-climbing algorithm algorithm for learning program optimizations. 
-%It consists of a two-step process in which an exploration batch $B_{\mathrm{ex}}$ is sampled from the model. 
-It consists of a two-step process. 
-First, an exploration batch $B_{\mathrm{ex}}$ is sampled from the dataset $D$ initialized with mined programs $F^i_u$ and their compiler-optimized outputs $F^i_o$. 
-For each input program $F^i_u$ in $B_{\mathrm{ex}}$, we sample a model-predicted optimization $\hat{F}^u_o$, and run $\hat{F}^u_o$ on the test the I/O test suite to compute the cost function $\mathcal{C}(\cdot)$.
-%Each output from the batch is executed on the test cases to test equivalence and its performance characteristics are measured and profiled. 
-If any of the new samples are both functionally equivalent by our distance function $\mathcal{D}(\cdot)$ and also more optimal compared to the compiler-optimized targets in the original dataset, the compiler-optimized target in the dataset is then replaced with the model's newly-discovered optimal rewrite. 
-\pcyin{For each $F^i_u$, are multiple samples of $\hat{F}^i_o$ generated? If that's the case we need to modify Algo 1 to clarify this.}
-After the exploration step is taken, a separate training batch $B_{\mathrm{tr}}$ is sampled for maximum-likelihood training from the dataset which may now contain model-optimized targets. \pcyin{The algorithm sketch here is good. We could improve the narrative by connecting each chunks of sentences to line numbers in Algo 1. See \url{https://www.overleaf.com/read/qmxxdyrnqjft}(lines 139 to 164) for an example.}
+% Inspired by the success of imitation learning in program synthesis, in this paper we propose an intuitive hill-climbing algorithm, a special case of imitation learning, for learning program optimizations. 
+% %We use an intuitive iterative hill-climbing algorithm algorithm for learning program optimizations. 
+% %It consists of a two-step process in which an exploration batch $B_{\mathrm{ex}}$ is sampled from the model. 
+% It consists of a two-step process. 
+% First, an exploration batch $B_{\mathrm{ex}}$ is sampled from the dataset $D$ initialized with mined programs $F^i_u$ and their compiler-optimized outputs $F^i_o$. 
+% For each input program $F^i_u$ in $B_{\mathrm{ex}}$, we sample a model-predicted optimization $\hat{F}^u_o$, and run $\hat{F}^u_o$ on the test the I/O test suite to compute the cost function $\mathcal{C}(\cdot)$.
+% %Each output from the batch is executed on the test cases to test equivalence and its performance characteristics are measured and profiled. 
+% If any of the new samples are both functionally equivalent by our distance function $\mathcal{D}(\cdot)$ and also more optimal compared to the compiler-optimized targets in the original dataset, the compiler-optimized target in the dataset is then replaced with the model's newly-discovered optimal rewrite. 
+% \pcyin{For each $F^i_u$, are multiple samples of $\hat{F}^i_o$ generated? If that's the case we need to modify Algo 1 to clarify this.}
+% After the exploration step is taken, a separate training batch $B_{\mathrm{tr}}$ is sampled for maximum-likelihood training from the dataset which may now contain model-optimized targets. \pcyin{The algorithm sketch here is good. We could improve the narrative by connecting each chunks of sentences to line numbers in Algo 1. See \url{https://www.overleaf.com/read/qmxxdyrnqjft}(lines 139 to 164) for an example.}
 
-Algorithm \ref{alg:hill_climbing} bears some resemblance to self-imitation learning \cite{oh2018self} \pcyin{can you briefly explain why they are similar?}; except we train on the entire sequence, instead of individual actions within a trajectory. Learning with this algorithm may be interpreted as imitation learning on an expert policy that iteratively improves. In our appendix, we also show how this is an extreme case of normalized off-policy reinforcement learning \alex{TODO: write out and put in bibliography.}. 
+% Algorithm \ref{alg:hill_climbing} bears some resemblance to self-imitation learning \cite{oh2018self} \pcyin{can you briefly explain why they are similar?}; except we train on the entire sequence, instead of individual actions within a trajectory. Learning with this algorithm may be interpreted as imitation learning on an expert policy that iteratively improves. In our appendix, we also show how this is an extreme case of normalized off-policy reinforcement learning \alex{TODO: write out and put in bibliography.}. 
 
-\textcolor{red}{=== End of Alex's Version ===}
-
+% \textcolor{red}{=== End of Alex's Version ===}
 
 \begin{algorithm}[t]
 \begin{algorithmic}
-\STATE Initialize model $\textbf{Model}$ parameters $\theta$ from pre-trained model \\
+\STATE Initialize model $f$ parameters $\theta$ from pre-trained model \\
 \STATE Initialize dataset of program function pairs and test cases: \\  
     $D = D_o =  \Big\{ \big( \
-    \{IO_k^i\}_{k=1...K}, \
+    \{IO^i\}_{k=1}^K, \
     \textrm{F}_{u}^i, \
     \textrm{F}_{o}^i, \
     % \textit{LiveOut}^i\
@@ -458,18 +477,18 @@ Algorithm \ref{alg:hill_climbing} bears some resemblance to self-imitation learn
  \WHILE{not converged}
   \STATE Sample a batch $B_{\mathrm{ex}}$ from $D_o$\\
   \FOR{ $\big( \
-    \{IO_k^i\}_{k=1...K}, \
+    \{IO^i\}_{k=1}^K, \
     \textrm{F}_{u}^i, \
     \textrm{F}_{o}^i, \
     % \textit{LiveOut}^i\
     \big)$  in $B_{\mathrm{ex}}$} 
     \STATE  sample $\hat{\textrm{F}}_{o}^i \; \sim \; f_{\theta}(\textrm{F}_{u}^i)$ \\
     \STATE calculate 
-    $\mathbfcal{C}(\textrm{F}_{o}^i)$, 
-    and $\mathbfcal{D} (\hat{\textrm{F}}_{o}^i, \textrm{F}_{o}^i)$ 
-    \IF{$\mathbfcal{D} (\hat{\textrm{F}}_{o}^i, \textrm{F}_{o}^i) == 0$ and \ 
-    $\mathbfcal{C}(\hat{\textrm{F}}_{o}^i) < \ 
-    \mathbfcal{C}(\textrm{F}_{o}^i) $ }
+    $\mathcal{C}(\textrm{F}_{o}^i)$, 
+    and $\mathcal{D} (\hat{\textrm{F}}_{o}^i, \textrm{F}_{o}^i)$ 
+    \IF{$\mathcal{D} (\hat{\textrm{F}}_{o}^i, \textrm{F}_{o}^i) == 0$ and \ 
+    $\mathcal{C}(\hat{\textrm{F}}_{o}^i) < \ 
+    \mathcal{C}(\textrm{F}_{o}^i) $ }
         \STATE  Replace $\textrm{F}_{o}^i$ with sample $\hat{\textrm{F}}_{o}^i$ in $D$ \\
     \ENDIF
   \ENDFOR
@@ -486,30 +505,31 @@ Algorithm \ref{alg:hill_climbing} bears some resemblance to self-imitation learn
 % \alex{I think this would be nice to include, even if this underperforms any other method. It may be challenging for the reader to follow how you derive this w/out visiting the appendix}
 
 \paragraph{Actor-Learner Architecture}
-%\gn{Is this an architecture or algorithm?}
-\gn{I changed this to a paragraph, as it's part of the iterative hill-climbing approach.}
 
-\pcyin{Maybe briefly explain why we use multiprocessing: because evaluating $\mathcal{D}(\cdot)$ is slow. Would be better to give a rough runtime number.}
-Importantly, to perform our experiments at scale, we utilize an actor-learner set up  \citep{liang2018memory, espeholt2018impala}. Specifically, before the training process begins, multiple actor threads are created which inherit the parameters of the parent learner and the dataset. For every iteration, each of the actor threads independently samples $B_{\textrm{ex}}$ from the distribution of the inherited model. 
+% \pcyin{Maybe briefly explain why we use multiprocessing: because evaluating $\mathcal{D}(\cdot)$ is slow. Would be better to give a rough runtime number.}
+To perform our experiments at scale, we utilize an actor-learner set up  \citep{liang2018memory, espeholt2018impala}. This was because the time it took to evaluate $\mathcal{C}$ and $\mathcal{D}$ were costly. In our actor-learner architecture, before the training process begins, multiple actor threads are created which inherit the parameters of the parent learner and the dataset. For every iteration, each of the actor threads independently samples $B_{\textrm{ex}}$ from the distribution of the inherited model. 
 
 After sampling a batch re-writes, an attempt is made to assemble the samples and execute them with their corresponding suite of test cases to calculate $\mathbfcal{C}$ and $\mathbfcal{D}$. At the local level, the actor then sends the samples with their related cost and correctness information to the learner module for learning. Then, the actor attempts to synchronize its parameters by inheriting a new copy, if available, from the learner module.
 
-Utilizing the actor-learner architecture was pivotal in being able to scale the speed of training. Otherwise, during our experiments, performing synchronized learning was slow \alex{is there a good way to quantify this ?}. 
+% Utilizing the actor-learner architecture was pivotal in being able to scale the speed of training. Otherwise, during our experiments, performing synchronized learning was slow \alex{is there a good way to quantify this ?}. 
 
 % Utilizing an actor-learner architecture allowed us to speed up training by over an order of magnitude. 
 
 \section{Experiments and Results}
 \label{sec:experiments}
 
-We are primarily interested in answering the following research questions: 
+% \pcyin{This could be commented out as we mention them as titles of sub-sections.}
 
-(1) Are neural sequence-to-sequence models capable of learning generalized semantics-preserving program optimizations ? We seek to measure this by investigating the model's ability to transduce correct programs that outperform unoptimized programs 
+\alex{@graham The 4 experimental questions are listed in the subsections and paragraphs after 6.1}
 
-(2) Can neural sequence model pre-trained on demonstrations of an optimizing compiler like \texttt{GCC} (\cref{sec:sec:results_training_with_test_cases}) learn to outperform the optimization levels for which it was pre-trained ? 
+% We are primarily interested in answering the following research questions: 
+% (1) Are neural sequence-to-sequence models capable of learning generalized semantics-preserving program optimizations ? We seek to measure this by investigating the model's ability to transduce correct programs that outperform unoptimized programs 
 
-(3) In learning to optimize real world programs, how much benefit do more involved methods of program verification, such as using SMT solvers, provide ? 
+% (2) Can neural sequence model pre-trained on demonstrations of an optimizing compiler like \texttt{GCC} (\cref{sec:sec:results_training_with_test_cases}) learn to outperform the optimization levels for which it was pre-trained ? 
 
-(4) What kind of optimization patterns does the neural optimizer learn (\cref{sec:sec:opt_examples})?
+% (3) In learning to optimize real world programs, how much benefit do more involved methods of program verification, such as using SMT solvers, provide ? 
+
+% (4) What kind of optimization patterns does the neural optimizer learn (\cref{sec:sec:opt_examples})?
 
 % \textcolor{red}{===== Begin of Alex's Version =====}
 % \subsection{Research Questions}
@@ -533,14 +553,17 @@ We are primarily interested in answering the following research questions:
 \paragraph{Measuring Program Performance and Correctness} 
 %\pcyin{We need to keep in mind that since we chose not to report results from training with SMT-solvers, we need to be careful to distinguish between the correctness function $\mathcal{D}$ used in \cref{alg:hill_climbing} for training and the SMT-bsed post-verification used in Table 2.}
 In our experiments, we calculate the cost function $\mathcal{C}$ (E.q. \ref{eqn:optimizaiton_goal}) first by calculating the sum of all expected CPU clock-cycles for each opcode in the synthesized assembly. 
-Then, we execute the entire test suite on the synthesized program and count the number of instructions actually executed.%
-\footnote{We chose to use these these methods of approximating runtime, as the actual measured runtime of the program re-writes may both be hardware-dependent and inconsistent between executions due to idiosyncrasies of the hardware used for experiments.}
-For each unoptimized program $F_u$, have a corresponding set of input examples ${\{IO_k\}}_{k=1...K}$ generated through random generation. \pcyin{The last sentence is a bit confusing?}
+Then, we execute the entire test suite on the synthesized program and count the number of instructions actually executed. Our cost function is the sum of these values.%
+\footnote{We chose to use these these methods of approximating runtime, as the actual measured runtime of the program re-writes may both be hardware-dependent and inconsistent between executions due to idiosyncrasies of the hardware used for experiments.} 
+
+% For each unoptimized program $F_u$, have a corresponding set of input examples ${\{IO_k\}}_{k=1...K}$ generated through random generation. \pcyin{The last sentence is a bit confusing?}
 
 % We allowed the model generate upwards of 256 test cases per-program, unless the generation budget time of 180 seconds per program was exhausted. 
 
-We consider two varieties of the correctness function $\mathcal{D}(\p, \hat{\mathrm{F}}_o)$ to measure semantic equivalence of the model-optimized and the original programs  (E.q., xxx). 
-First, we check the equivalence of the \textbf{test-case execution results ({$\bm{\mathcal{D}_\textbf{I/O}}$})} between the model-optimized program and the original one. 
+We consider two varieties of the correctness function $\mathcal{D}(\p, \hat{\mathrm{F}}_o)$ to measure semantic equivalence of the model-optimized and the original programs  (E.q., XX). 
+For our primary experiments we utilize we use a \textbf{SMT solver ($\bm{\mathcal{D}_\textbf{verifier}}$)} to check equivalence between the model-optimized program and the original one. In theory, the SMT-based verifier should be able to accurately check for correctness as long as the number of loop iterations stays below the configured maximum bound of $b$, and the process does not timeout by taking over $S$ seconds. In practice; however, SMT-based verifiers can be costly to run. For our experiments, we utilized a bound $b$ of 4, and a timeout $S$ of 180 seconds.  We utilized the verifier for x86-64 assembly code available in \textsc{STOKE} which makes use of the Z3 SMT solver \cite{churchill2017sound, de2008z3}. 
+
+An alternative to using formal verificaiton methods is to use data-driven testing provided by a test suite. In order to understand the potential trade-offs between the potentially efficient test cases likely-accurate verifiers, we may compare the two approaches. Towards this, we may alternatively check the equivalence of the \textbf{test-case execution results ({$\bm{\mathcal{D}_\textbf{I/O}}$})} between the model-optimized program and the original one. 
 $\correctfuncio/=0$ \textit{iff}~the output for any one of the $K$ test cases in $\{ IO \}_{k=1}^K$ differed by one bit or more in the relevant hardware states.
 %, the the programs were not equivalent.
 %In order to calculate correctness $\mathcal{D}$, we initially used the hardware states $O$ (i.e. output) after execution between the reference program fed in as input to the model: if the output for any one test cases differed by one bit or more in the relevant hardware states, the the programs were not equivalent. 
@@ -550,16 +573,16 @@ As an example, suppose a program with an input argument $x$ contains an conditio
 % Take an example of a program where if the variable $x$ is equal to the constant $0$ (i.e. $\textbf{if} \;\; x\;==\;0:\; \textsc{do}...$). If $x$ is represented by a 64-bit integer in a cpu register, and if we use a uniform random distribution to generate values for x in test cases,  the likelihood of sampling the exact constant 0 is $(2^{-64})$, and thus very unlikely. As a result, randomly-generated test cases can be highly insufficient for measuring program correctness. 
 
 %As we will discuss later on,  we also experimented by using a SMT solver as a bounded verifier to add more rigor to the calculation of $\mathcal{D}$. 
-Therefore, to tackle possible spurious model predictions, we use \textbf{SMT solver ($\bm{\mathcal{D}_\textbf{verifier}}$)}.
-\pcyin{TODO: Given a very brief introduction of SMT solvers.}
-In theory, the verifier should be able to accurately check for correctness as long as the number of loop iterations stays below the configured maximum bound of $b$, and the process does not timeout by taking over $S$ seconds. For our experiments, we utilized a bound $b$ of 4, and a timeout $S$ of 180 seconds. 
-We utilized the verifier for x86-64 assembly code available in \textsc{STOKE} which makes use of the Z3 SMT solver \cite{churchill2017sound, de2008z3}. \alex{do you think it is okay to have italicized hyperparameters here ? I think it seems okay.}
+% Therefore, to tackle possible spurious model predictions, we use \textbf{SMT solver ($\bm{\mathcal{D}_\textbf{verifier}}$)}.
+% In theory, the verifier should be able to accurately check for correctness as long as the number of loop iterations stays below the configured maximum bound of $b$, and the process does not timeout by taking over $S$ seconds. For our experiments, we utilized a bound $b$ of 4, and a timeout $S$ of 180 seconds. 
+% We utilized the verifier for x86-64 assembly code available in \textsc{STOKE} which makes use of the Z3 SMT solver \cite{churchill2017sound, de2008z3}. 
 
 % \gn{IMPORTANT: let's try to think of the main experimental findings that we want to show. One good way to organize these is to think of them in question format, with the most interesting questions first, and auxiliary questions afterwards. For example the ones I can immediately think of now are: ``RQ1: Can machine learning models learn to optimize real-world programs, particularly better than compiler heuristics? RQ2: What sorts of optimizations are learned? RQ3: What is the importance of a good test suite or verifier? RQ4: ???'' You could either explicitly lay them out in bullet points here, or just kinda order the explanation along these lines (maybe in different sections)} \alex{Great point; I think this could perhaps fit in section 3 as a pre-amble to "learning program optimizations" to frame what we're interested in accomplishing. In progress (1:51PM)}
 
 \paragraph{Evaluation}
-Given an evaluation set $E$ of unoptimized programs, we report the percentage of programs in $E$ whose model-optimized programs outperform the compiler-optimized results as measured by the cost function $C(\cdot)$.
-Specifically, for each unoptimized program, we generate model-optimized candidates using a beam-size of 10, executing all on the test suite $\{IO\}_{k}^K$ to evaluate the cost $\mathcal{C}$ and correctness, and report results on the best-performing correct sample (if one was available). 
+Given an evaluation set $E$ of unoptimized programs, we report the percentage of programs in $E$ whose model-optimized programs outperform the compiler-optimized results as measured by the cost function $\mathcal{C}(\cdot)$.
+Specifically, for each unoptimized program, we generate model-optimized candidates using a beam-size of 10, executing all on the test suite $\{IO\}_{k}^K$ to evaluate the cost and semantic equivalence, and report results on the best-performing correct sample (if one was available). 
+We use the SMT-based verifier ($\correctfuncsmt/$) to measure program equivalence. 
 %We compare the model optimized program with two compiler configurations.
 
 We report our performance on a randomly-sampled 861 examples from the training set as well as the entire test set. Our intent in doing so is to evaluate the learned model in two task-settings: the first being an \textit{inductive} task where we are interested in the model generated and its ability to generalize to unseen examples in the test set. The second task is a \textit{transductive} task where we are not interested in the model per-se, rather, we are interested in the capacity of the model and the training procedure to transduce unoptimized programs to optimized programs.\footnote{Another way to perform transductive evaluation is by reporting statistcs on the best outputs generated during training. We felt beam-search would provide a more interesting comparison.}
@@ -569,19 +592,88 @@ We report our performance on a randomly-sampled 861 examples from the training s
 %In the following two sections, we report performance of the neural optimization model trained using the two proposed correctness functions \correctfuncio/ and \correctfuncsmt/, respectively.
 
 % \subsection{Training Only with test cases}
-\subsection{Training using $\bm{\mathcal{D}_\textrm{I/O}}$}
-\label{sec:sec:results_training_with_test_cases}
+%\subsection{Training using $\bm{\mathcal{D}_\textrm{I/O}}$}
+%\label{sec:sec:results_training_with_test_cases}
 
 % \subsection{Experimental Setup}
 
 % \subsection{test case-Only Training}
 
-In trying to learn program optimizations, we first train the model using the hill-climbing algorithm (\cref{alg:hill_climbing}) where we use test cases to evaluate program correctness (\correctfuncio/). Table \ref{tab:random_generation_results} lists the results. 
+\subsection{Are  neural  sequence-to-sequence  models  capable  of learning and discovering optimizations ?}
 
-We first find that our model is able to find new optimizations for this task, wherein on the 24.27\% of programs sampled for the transductive task were able to outperform the \texttt{GCC -Og} benchmark. This performance on the \texttt{GCC -Og} benchmark also seemed to generalize to the hold-out test set; and the performance on the \texttt{GCC -O0} task also seemed to generalize as well. An interesting result was that the hill-climbing algorithm performed slightly worse in the inductive task of outperforming the \texttt{GCC -O0} unoptimized baseline. 
+\cref{tab:z3_eval_results} shows our main results.
+We report the percentage of semantic-preserving optimizations that outperform the original program (\textbf{Beat Unoptimized}) and the optimizer (\textbf{Beat GCC}).
 
-We subsequently performed a manual evaluation of the outputs. We randomly sampled 29 of the programs that beat the \texttt{GCC -Og} benchmark in the hold-out set. Upon close analysis, we found only 8 of these 29 programs (or 27.59\%) were semantics preserving and correct. One group of errors centered around the model removing conditional branches from programs that were unlikely to be triggered through random testing. 
-%
+\paragraph{Learning to Optimize} 
+Towards learning and evaluating general program optimizations, we first measure the performance of the model pre-trained on compiler-optimized targets using only supervised learning (\cref{tab:z3_eval_results}, part 1). 
+%inductive prediction task \pcyin{I still feel the inductive prediction/transductive thing a bit unintutive. Perhaps we could just keep them}), the model of outperforming the unoptimized \texttt{GCC -O0} baseline. This result, as well as all experiments evaluated using the SMT-based verifier, are reported in Table \ref{tab:z3_eval_results}. 
+Our model shows a relatively strong ability on the hold-out test set to generate optimized programs more efficient than the original ones, with 86.22\% of programs (Beat Unoptimized, \cref{tab:z3_eval_results}) both passing all testcases and verifying using the SMT-based verifier. These results indicate that via demonstration only on compiler-optimized outputs, our neural sequence-to-sequence model is capable of learning generlizable optimizations. 
+
+\paragraph{Learning to Outperform the Optimizer} With the goal of demonstrating if the neural sequence model is able to learn to outperform the optimization levels on which it was trained, we then further train the model using the hill-climbing algorithm (\cref{alg:hill_climbing}) wherein we use \correctfuncsmt/ to check equivalence between the candidate model-optimized programs and the original one. Results are listed in \cref{tab:z3_eval_results} (part 2).
+
+The results for the transductive task (evaluated on the training set) provide evidence that the hill-climbing algorithm helps the model discover more efficient optimizations than the compiler-generated targets. 
+For instance, through additional steps of hill-climb learning, the model trained with the verifier-based correctness function ($\correctfuncsmt/$) is able to outperform the optimizer on 6.74\% of examples, as compared to 2.21\% with the pre-training only.
+%through the additional training, the model increased its performance on the outperforming \texttt{GCC -Og} benchmark, from 2.21\% with the pre-trained model to 6.74\% after hill-climbing training. 
+%Moreover, the model demonstrated a generalized ability to learn new optimizations, where on the inductive task (test set), the performance on the outperforming optimizer benchmark increased from 1.11\% to 5.00\%. 
+Moreover, the model demonstrated a generalized ability to learn new optimizations, where on the inductive task (test set), the chance of outperforming the optimizer increased from 1.11\% to 5.00\%. 
+
+A key reason as to why the hill-climbing algorithm may be effective lies in how the pre-trained model itself was surprisingly capable of generating code that outperformed GCC 2.21\% of the time (though beam search). 
+This suggests the model might learns more context-dependent optimization strategies for some input programs.
+%We conjecture that by large-scale pre-training of the model, it was potentially able to learn optimization strategies and program semantics that may have allowed it to reason about optimizations in a perhaps more generally. \alex{I think I say this lightly, but this is also I feel a very bold statement for which there may not be so much evidence.... May want to change some wording here... but it may also be provocative} 
+We also note that in learning these additional strategies, the model's ability to optimize programs generally, as measured by outperforming the unoptimized baseline is still competitive with the model pre-trained via demonstrative compiler optimizations. 
+
+\subsection{How Much Benefit Did The SMT-Based Verifier Provide ?}
+At training time, our system uses a SMT-based verification model as the correctness function (\correctfuncsmt/) to ensure semantic equivalence of optimized programs (E.q. xxx).
+Such verification, although accurate and rigorous, could be slow. 
+%In learning to optimize programs, it may often times be easier to implement data-driven methods based on automatically-generated testcases, not to mention, more efficient. 
+To investigate the trade-off between efficiency and accuracy in evaluating the correctness function, we train our model using a an alternative, which verifies correctness using only I/O test cases (\correctfuncio/, \cref{sec:setup}). Generally evaluating correctness with I/O may be both easier to implement, not to mention, more efficient; however, randomly-generated testcases likely will not provide the guarantees that SMT-based verifiers could. 
+%There may be a tradeoff between thoroughness and efficiency. 
+%In order to understand this problem in our context, we performed another experiment by training with the hill-climbing algorithm (\cref{alg:hill_climbing}); however, this time, only using test-case execution results \correctfuncio/ for evaluating correctness inside the training loop. 
+Results are presented in \cref{tab:z3_eval_results} (part 3)\footnote{We still use $\correctfuncsmt/$ as the evaluation metric.}.
+%Our results reported in Table \ref{tab:z3_eval_results} (part 3) are interesting. 
+When evaluated using the SMT-based solver, the neural optimizer is still effective, beating the optimizer 5.81\% of the time on the training set and 5.22\% of the time on the test set, even slightly outperforming the system trained with the more accurate SMT-based verifier $\correctfuncsmt/$ (5.00\%). 
+%In fact, it is a somewhat surprising result the model trained with testcases marginally outperforms the model directly trained on examples verified by the SMT-solver. 
+Another interesting result is the impact of training with \correctfuncio/ on generalizable optimizations: the model's performance degrades on the unoptimized task (Beat Unoptimized) from 86.22\% during pre-training, to 65.33\% after hill climbing. 
+Additionally, we observe the model's performance degrades when comparing to unoptimized programs, due to the existence of spurious optimizations that manage to pass verification with the weaker correctness function $\correctfuncio/$ (\cref{sec:setup}).
+
+%Indeed, as we discuss in the following section, about 70\% programs that pass $\correctfuncio/$ are actually spurious.
+To better understand the impact of such spurious programs in learning, 
+we subsequently performed a manual evaluation of the outputs. 
+We randomly sampled 29 of the programs that outperforms the optimizer from the test set. 
+Upon close analysis, we found only 8 of these 29 programs (or ~30\%) were actually semantics preserving and correct, suggesting that around 70\% of programs that could pass the test cases are indeed spurious.\footnote{In contrast, we took an additional step and sampled all 44 examples that outperformed GCC in the test set. We only chose examples that we could confidently decide were correct or not. We found that only 4 were incorrect due to strange edge cases possibly related to verifier errors or mishanding of unlinked assembly}
+%This is inline with 
+
+%relaxed correctness function allows for 
+%However, as we explained in \cref{sec:setup}, due to the existence of spurious optimizations the results on 
+
+\paragraph{Evaluating With Test Cases Only} In order to evaluate the importance of the SMT-based verifier on evaluation, we investigated what our results would have looked like had we evaluated using test cases only for evaluation. These results are summarized in Table \ref{tab:random_generation_results}. A far higher proportion of programs were shown to succeed in outperforming the optimizer: 22.22\% when evaluated with test cases on the test set as compared to 5.22\% when evaluated with test cases and the SMT-based solver on the test set. 
+
+%We subsequently performed a manual evaluation of the outputs. We randomly sampled 29 of the programs that succeeded in the Beat GCC benchmark from the hold-out set. Upon close analysis, we found only 8 of these 29 programs (or 27.59\%) were semantics preserving and correct.\footnote{In contrast, we took an additional step and sampled all 44 examples that outperformed GCC in the test set. We only chose examples that we could confidently decide were correct or not. We found that only 4 were incorrect due to strange edge cases possibly related to verifier errors or mishanding of unlinked assembly} 
+
+%Our manual evaluation demonstrates that relying on randomly generated testcases for evalution may be misleading. They support that verifiers, highly-comprehensive test suites, or other equally robust methods should be used to evaluate programs synthesized by neural networks. 
+
+These results, together with our previous analysis on the dominance of spurious optimizations, suggest that relying on randomly generated testcases for evaluation may be misleading. They support that verifiers, highly-comprehensive test suites, or other equally robust methods should be used to evaluate programs synthesized by neural networks. 
+
+
+Lastly, we now know that using test cases for equivalence \correctfuncio/ taught the model to learn spurious ``optimizations." It is possible the performance by the model trained with \correctfuncio/ on outperforming unoptimized code (Beat Unoptimized) was caused by overfitting on spurious re-writes. Nevertheless, it is somewhat surprising the model learned to be so competitive on on outperforming GCC. 
+
+
+
+% \alex{EVERYTHING BELOW HERE IS OLD STUFF}
+
+% % \alex{i.e. Training with \correctfuncsmt/}
+% % \paragraph{Training with \correctfuncsmt/} 
+
+% When we trained using testcases only for program correctness, the model's performance in performing optimizations in general degraded. Given the strength of the SMT-based verifier to demonstrate program correctness, we trained the model via the hill-climbing algorithm again, only this time utilizing the SMT-based verifier, in addition to testcases, to determine correctness \correctfuncsmt/. When we evaluated this model, we used both the SMT-based verifier and the test case suite to determine correctness again. Results for all experiments evaluated with both the SMT-based verifier and test cases are located in Table \ref{tab:z3_eval_results}. 
+
+% By utilizing the the SMT-based verifier inside the hill climbing training loop; the model was capable of generating a competitive amount of program re-writes that outperformed the \texttt{GCC -Og} benchmark without significantly  degrading performance on the \texttt{GCC -O0} baseline. 
+
+% In trying to learn program optimizations, we first train the model using the hill-climbing algorithm (\cref{alg:hill_climbing}) where we use test cases to evaluate program correctness (\correctfuncio/). Table \ref{tab:random_generation_results} lists the results. 
+
+% We first find that our model is able to find new optimizations for this task, wherein on the 24.27\% of programs sampled for the transductive task were able to outperform the \texttt{GCC -Og} benchmark. This performance on the \texttt{GCC -Og} benchmark also seemed to generalize to the hold-out test set; and the performance on the \texttt{GCC -O0} task also seemed to generalize as well. An interesting result was that the hill-climbing algorithm performed slightly worse in the inductive task of outperforming the \texttt{GCC -O0} unoptimized baseline. 
+
+% We subsequently performed a manual evaluation of the outputs. We randomly sampled 29 of the programs that beat the \texttt{GCC -Og} benchmark in the hold-out set. Upon close analysis, we found only 8 of these 29 programs (or 27.59\%) were semantics preserving and correct. One group of errors centered around the model removing conditional branches from programs that were unlikely to be triggered through random testing. 
+% %
 %We witnessed that the model often %removed entire branches from programs. 
 %\pcyin{Sorry I don't quite get the %following two sentences.}
 
@@ -595,67 +687,126 @@ We subsequently performed a manual evaluation of the outputs. We randomly sample
 
 % Given the limitations of random test case generation, we sought to utilize the SMT-based verifier to calculate $D$ for evalutation. When evaluating with SMT solvers, the proportion of programs that outperform the -Og baseline drops dramatically.\footnote{We took an additional step and sampled all 44 examples that outperformed the \texttt{GCC -Og} benchmark in the test set that we could confidently decide on correctness. We found that only 4 were incorrect due to strange edge cases of unlinked assembly and potential complications with the validator.} Nevertheless, the fine-tuning procedure still allows for a noticeable improvement over the pre-trained baseline. Additionally, after the hill-climbing procedure, the model is less capable of generating samples that outperform the \texttt{GCC -O0} baseline. Upon further inspection, for both samples from the training and the test set 100\% of the programs that were not capable of outperforming the -O0 baseline were deemed logically incorrect by the verifier. By performing the hill-climbing training procedure with only test cases to measure correctness $\mathcal{D}$, the model learned new and valid optimizations; yet it evidently lost its ability to consistently perform less-aggressive \alex{"aggressive" is a little awkward here (I wrote it)}, semantics-preserving optimizations. Results for all experiments evaluated with both the SMT-based verifier and test cases are located in Table \ref{tab:z3_eval_results}
 
-\subsection{Evaluating and Training with SMT-Based Verifiers}
-\label{sec:sec:results:training_with_smt}
+% \subsection{Evaluating and Training with SMT-Based Verifiers}
+% \label{sec:sec:results:training_with_smt}
 
-Given the limitations of random test case generation, we sought to utilize the SMT-based verifier to calculate correctness for evaluation in addition to the testcases; results for this evaluation are located in Table \ref{tab:z3_eval_results}. In this task, when additionally evaluated with the SMT-based verifier, the proportion of programs that outperformed both the \texttt{GCC -O0} and \texttt{GCC -Og} targets dropped relative to when evaluated using test cases only. When compared to the pre-trianed baseline, the model's ability to outperform the \texttt{GCC -O0} target diminished significantly compared to the pre-trained model; however, the model's ability to outperform the \texttt{GCC -Og} benchmark improved over the pre-trained baseline.  Upon further inspection, we realized that 100\% of samples from the training and the test that did not outperform the -O0 baseline were determined incorrect by the SMT-based verifier. We hypothesize that by training on test cases only for correctness, the model was biased to learn spurious optimizations, and subsequently lost its capacity to consistently perform less-aggressive, semantics-preserving optimizations. However, the additional training through hill climbing enabled to model to learned new and valid optimizations .\footnote{We took an additional step and sampled all 44 examples that outperformed the \texttt{GCC -Og} benchmark in the test set that we could confidently decide on correctness. We found that only 4 were incorrect due to strange edge cases of unlinked assembly and potential verifier errors} A deep dive into specific examples of optimizations are located in Section \ref{sec:sec:opt_examples}. 
+% Given the limitations of random test case generation, we sought to utilize the SMT-based verifier to calculate correctness for evaluation in addition to the testcases; results for this evaluation are located in Table \ref{tab:z3_eval_results}. In this task, when additionally evaluated with the SMT-based verifier, the proportion of programs that outperformed both the \texttt{GCC -O0} and \texttt{GCC -Og} targets dropped relative to when evaluated using test cases only. When compared to the pre-trianed baseline, the model's ability to outperform the \texttt{GCC -O0} target diminished significantly compared to the pre-trained model; however, the model's ability to outperform the \texttt{GCC -Og} benchmark improved over the pre-trained baseline.  Upon further inspection, we realized that 100\% of samples from the training and the test that did not outperform the -O0 baseline were determined incorrect by the SMT-based verifier. We hypothesize that by training on test cases only for correctness, the model was biased to learn spurious optimizations, and subsequently lost its capacity to consistently perform less-aggressive, semantics-preserving optimizations. However, the additional training through hill climbing enabled to model to learned new and valid optimizations .\footnote{We took an additional step and sampled all 44 examples that outperformed the \texttt{GCC -Og} benchmark in the test set that we could confidently decide on correctness. We found that only 4 were incorrect due to strange edge cases of unlinked assembly and potential verifier errors} A deep dive into specific examples of optimizations are located in Section \ref{sec:sec:opt_examples}. 
 
 
-\paragraph{Training with \correctfuncsmt/} When we trained using testcases only for program correctness, the model's performance in performing optimizations in general degraded. Given the strength of the SMT-based verifier to demonstrate program correctness, we trained the model via the hill-climbing algorithm again, only this time utilizing the SMT-based verifier, in addition to testcases, to determine correctness \correctfuncsmt/. When we evaluated this model, we used both the SMT-based verifier and the test case suite to determine correctness again. Results for all experiments evaluated with both the SMT-based verifier and test cases are located in Table \ref{tab:z3_eval_results}. 
+% \paragraph{Training with \correctfuncsmt/} When we trained using testcases only for program correctness, the model's performance in performing optimizations in general degraded. Given the strength of the SMT-based verifier to demonstrate program correctness, we trained the model via the hill-climbing algorithm again, only this time utilizing the SMT-based verifier, in addition to testcases, to determine correctness \correctfuncsmt/. When we evaluated this model, we used both the SMT-based verifier and the test case suite to determine correctness again. Results for all experiments evaluated with both the SMT-based verifier and test cases are located in Table \ref{tab:z3_eval_results}. 
 
-By utilizing the the SMT-based verifier inside the hill climbing training loop; the model was capable of generating a competitive amount of program re-writes that outperformed the \texttt{GCC -Og} benchmark without significantly  degrading performance on the \texttt{GCC -O0} baseline. 
+% By utilizing the the SMT-based verifier inside the hill climbing training loop; the model was capable of generating a competitive amount of program re-writes that outperformed the \texttt{GCC -Og} benchmark without significantly  degrading performance on the \texttt{GCC -O0} baseline. 
+
+% \begin{table}[t]
+% \caption{Evaluation results for model trained and evaluated on test cases only. The table reports the proportion of programs within the dataset whose best sample through beam search outperformed either the \texttt{GCC -O0} baseline or the \texttt{GCC -Og} baseline}
+% \label{tab:random_generation_results}
+% \vskip 0.15in
+% \begin{center}
+% \begin{small}
+% \begin{sc}
+% \begin{tabular}{lcc}
+% \toprule
+% Task & Beat Unoptimized & Beat GCC \\
+% \midrule
+% PreTrained train   & 89.43\% & 6.04\% \\
+% HillClimb train  & \textbf{93.14}\% & \textbf{24.27}\% \\
+% \midrule
+% PreTrained test    & \textbf{90.33}\% & 5.67\% \\
+% HillClimb test  & 87.56\% & \textbf{22.22}\% \\
+% \bottomrule
+% \end{tabular}
+% \end{sc}
+% \end{small}
+% \end{center}
+% \vskip -0.1in
+% \end{table}
+
+
+% \begin{table}[t]
+% \caption{Evaluation results for models evaluated with the SMT-based verifier as well as the test case suite for correctness. The table report the proportion of programs sampled outperforming GCC settings. A prefix of \textsc{TC} indicates the model trained through hill climbing with test cases only for correctness, and \textsc{SMT} indicated the model trained through hill climbing with the SMT-based verifier and test cases for correctness}
+% %\label{tab:z3_eval_results}
+% % \caption{Evaluation results for model fine-tuned on test cases-only and evaluated with test cases and the SMT solver for correcteness. The table report the proportion of programs sampled outperforming GCC settings. The inductive task is denoted by \textit{ind.} and the transductive task is denoted by \textit{trans.}}
+% \vskip 0.15in
+% \begin{center}
+% \begin{small}
+% \begin{sc}
+% \begin{tabular}{lcc}
+% \toprule
+% Task & Outperf. -O0 & Outperf. -Og \\
+% \midrule
+% PreTrained train   & 85.93\% & 2.21\% \\
+% TC HillClimb train  & 74.69\% & 5.81\% \\
+% SMT HillClimb train  & \textbf{94.89}\% & \textbf{6.74}\% \\
+% \midrule
+% PreTrained test    & \textbf{86.22}\% & 1.11 \% \\
+% TC HillClimb test  & 65.33\% & \textbf{5.22}\% \\
+% SMT HillClimb test  & 85.33\% & 5.00\% \\
+% \bottomrule
+% \end{tabular}
+% \end{sc}
+% \end{small}
+% \end{center}
+% \vskip -0.1in
+% \end{table}
 
 \begin{table}[t]
-\caption{Evaluation results for model trained and evaluated on test cases only. The table reports the proportion of programs within the dataset whose best sample through beam search outperformed either the \texttt{GCC -O0} baseline or the \texttt{GCC -Og} baseline}
-\label{tab:random_generation_results}
-\vskip 0.15in
-\begin{center}
-\begin{small}
-\begin{sc}
-\begin{tabular}{lcc}
+\small
+\centering
+\caption{Evaluation results of neural program optimizers. We report the ratio of model-optimized programs that outperform the unoptimized code (Beat Unoptimized) and the compiler-optimized ones (Beat \texttt{GCC}). Unoptimized and GCC-optimized programs are generated by running \texttt{GCC} with flags \texttt{-O0} and \texttt{-Og}, respectively.}
+\begin{tabular}{llcc}
 \toprule
-Task & Outperf. -O0 & Outperf. -Og \\
-\midrule
-PreTrained train   & 89.43\% & 6.04\% \\
-HillClimb train  & \textbf{93.14}\% & \textbf{24.27}\% \\
-\midrule
-PreTrained test    & \textbf{90.33}\% & 5.67\% \\
-HillClimb test  & 87.56\% & \textbf{22.22}\% \\
-\bottomrule
+\textbf{Model}                              & \textbf{Split} & \textbf{Beat Unoptimized} & \textbf{Beat \texttt{GCC}} \\ \midrule
+\multirow{2}{*}{\textsc{Pre-train}}          & Train & 85.93\%          & 2.21\%   \\
+                                   & Test  & 86.22\%          & 1.11\%   \\ \midrule
+\textsc{HillClimb}                          & Train & 94.89\%          & 6.74\%   \\
+~~~~$w$/ \correctfuncsmt/ & Test  & 85.33\%          & 5.00\%   \\ \midrule
+\textsc{HillClimb}                          & Train & 74.69\%          & 5.81\%   \\
+~~~~$w$/ \correctfuncio/  & Test  & 65.33\%          & 5.22\%  \\ \bottomrule 
 \end{tabular}
-\end{sc}
-\end{small}
-\end{center}
-\vskip -0.1in
-\end{table}
-
-
-\begin{table}[t]
-\caption{Evaluation results for models evaluated with the SMT-based verifier as well as the test case suite for correctness. The table report the proportion of programs sampled outperforming GCC settings. A prefix of \textsc{TC} indicates the model trained through hill climbing with test cases only for correctness, and \textsc{SMT} indicated the model trained through hill climbing with the SMT-based verifier and test cases for correctness}
 \label{tab:z3_eval_results}
-% \caption{Evaluation results for model fine-tuned on test cases-only and evaluated with test cases and the SMT solver for correcteness. The table report the proportion of programs sampled outperforming GCC settings. The inductive task is denoted by \textit{ind.} and the transductive task is denoted by \textit{trans.}}
-\vskip 0.15in
-\begin{center}
-\begin{small}
-\begin{sc}
-\begin{tabular}{lcc}
-\toprule
-Task & Outperf. -O0 & Outperf. -Og \\
-\midrule
-PreTrained train   & 85.93\% & 2.21\% \\
-TC HillClimb train  & 74.69\% & 5.81\% \\
-SMT HillClimb train  & \textbf{94.89}\% & \textbf{6.74}\% \\
-\midrule
-PreTrained test    & \textbf{86.22}\% & 1.11 \% \\
-TC HillClimb test  & 65.33\% & \textbf{5.22}\% \\
-SMT HillClimb test  & 85.33\% & 5.00\% \\
-\bottomrule
-\end{tabular}
-\end{sc}
-\end{small}
-\end{center}
-\vskip -0.1in
 \end{table}
+
+
+
+% \begin{table}[t]
+% \caption{Results for training and evaluating the neural optimizer using test-case execution results (\correctfuncio/) only}
+% \label{tab:random_generation_results}
+% \vskip 0.15in
+% \begin{center}
+% \begin{small}
+% \begin{sc}
+% \begin{tabular}{lcc}
+% \toprule
+% Task & Beat Unoptimized & Beat GCC \\
+% \midrule
+% PreTrain train   & 89.43\% & 6.04\% \\
+% HillClimb train  & 93.14\% & 24.27\% \\
+% \midrule
+% PreTrain test    & 90.33\% & 5.67\% \\
+% HillClimb test  & 87.56\% & 22.22\% \\
+% \bottomrule
+% \end{tabular}
+% \end{sc}
+% \end{small}
+% \end{center}
+% \vskip -0.1in
+% \end{table}
+
+\begin{table}[t]
+\small
+\centering
+\caption{Results for training and evaluating the neural optimizer using test-case execution results (\correctfuncio/) only.}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Model}                              & \textbf{Split} & \textbf{Beat Unoptimized} & \textbf{Beat \texttt{GCC}} \\ \midrule
+\multirow{2}{*}{\textsc{Pre-train}}          & Train & 89.43\%          & 6.04\%   \\
+                                   & Test  & 90.33\%          & 5.67\%   \\ \midrule
+\textsc{HillClimb}                          & Train & 93.14\%          & 24.27\%   \\
+~~~~$w$/ \correctfuncio/ & Test  & 87.56\%          & 22.22\%   \\  \bottomrule 
+\end{tabular}
+\label{tab:z3_eval_results}
+\end{table}
+
 
 
 \subsection{Optimization Examples}
